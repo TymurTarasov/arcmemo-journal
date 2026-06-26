@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ArcMemoJournal • Your USDC Payment Journal on Arc</title>
+  </head>
+  <body class="bg-zinc-950 text-white">
+    <div class="max-w-4xl mx-auto px-6 py-10">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-10">
+        <div>
+          <h1 class="text-4xl font-bold tracking-tight">ArcMemoJournal</h1>
+          <p class="text-zinc-400 mt-1">Your personal USDC payment journal with memos on Arc Testnet</p>
+        </div>
+        <button id="connectBtn"
+          class="px-6 py-3 bg-white text-black font-medium rounded-2xl hover:bg-zinc-200 transition flex items-center gap-2">
+          Connect Wallet
+        </button>
+      </div>
+
+      <!-- Wallet Status -->
+      <div id="walletStatus" class="mb-8 text-sm text-zinc-400">
+        Wallet not connected
+      </div>
+
+      <!-- Send Form -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 mb-10">
+        <h2 class="text-2xl font-semibold mb-6">Send USDC with Memo</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm text-zinc-400 mb-2">Recipient Address</label>
+            <input id="recipient" type="text" placeholder="0x..."
+              class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-500">
+          </div>
+
+          <div>
+            <label class="block text-sm text-zinc-400 mb-2">Amount (USDC)</label>
+            <input id="amount" type="number" value="1" step="0.01"
+              class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-500">
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <label class="block text-sm text-zinc-400 mb-2">Memo / Note</label>
+          <textarea id="memo" rows="3" placeholder="e.g. Test payment, Thanks for help, Arc test..."
+            class="w-full bg-zinc-950 border border-zinc-700 rounded-3xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-500 resize-y"></textarea>
+        </div>
+
+        <button id="sendBtn"
+          class="mt-8 w-full bg-emerald-500 hover:bg-emerald-600 transition text-black font-semibold py-4 rounded-2xl text-lg disabled:opacity-50">
+          Send with Memo
+        </button>
+      </div>
+
+      <!-- History -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-semibold">My Sent Payments</h2>
+          <button id="clearHistoryBtn"
+            class="text-sm px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-zinc-400">
+            Clear History
+          </button>
+        </div>
+        
+        <div id="historyList" class="space-y-3 text-sm">
+          <div class="text-zinc-500 text-center py-8 border border-dashed border-zinc-800 rounded-3xl">
+            Your payment history will appear here
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
