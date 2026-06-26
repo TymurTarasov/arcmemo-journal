@@ -1,5 +1,5 @@
 import './style.css'
-import { createWalletClient, custom, parseUnits } from 'viem'
+import { createWalletClient, custom, parseUnits, formatUnits } from 'viem'
 
 const ARC_TESTNET = {
   id: 5042002,
@@ -10,17 +10,21 @@ const ARC_TESTNET = {
   },
 }
 
-const USDC_ADDRESS = '0x3600000000000000000000000000000000000000'
-
 let walletClient
 let account
+let history = []
 
 const connectBtn = document.getElementById('connectBtn')
 const sendBtn = document.getElementById('sendBtn')
 const walletStatus = document.getElementById('walletStatus')
+const historyList = document.getElementById('historyList')
 
 connectBtn.addEventListener('click', connectWallet)
 sendBtn.addEventListener('click', sendWithMemo)
+document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory)
+
+// Загружаем историю из localStorage при старте
+loadHistoryFromStorage()
 
 async function connectWallet() {
   if (!window.ethereum) {
@@ -41,7 +45,6 @@ async function connectWallet() {
     connectBtn.textContent = 'Wallet Connected'
     connectBtn.disabled = true
 
-    // Check current chain
     await checkAndSwitchNetwork()
   } catch (error) {
     console.error(error)
@@ -51,19 +54,15 @@ async function connectWallet() {
 
 async function checkAndSwitchNetwork() {
   const chainId = await walletClient.getChainId()
-
   if (chainId !== ARC_TESTNET.id) {
     walletStatus.innerHTML = `
       Connected: <span class="font-mono text-emerald-400">${account.slice(0,6)}...${account.slice(-4)}</span><br>
-      <span class="text-red-400">Wrong network! Please switch to Arc Testnet.</span>
+      <span class="text-red-400">Wrong network! Switch to Arc Testnet.</span>
     `
-
-    // Create switch button
     const switchBtn = document.createElement('button')
     switchBtn.textContent = 'Switch to Arc Testnet'
     switchBtn.className = 'mt-2 px-4 py-2 bg-orange-500 text-black text-sm rounded-xl font-medium'
     switchBtn.onclick = switchToArcTestnet
-
     walletStatus.appendChild(switchBtn)
   }
 }
@@ -71,12 +70,9 @@ async function checkAndSwitchNetwork() {
 async function switchToArcTestnet() {
   try {
     await walletClient.switchChain({ id: ARC_TESTNET.id })
-    // Refresh status after switching
     walletStatus.innerHTML = `Connected: <span class="font-mono text-emerald-400">${account.slice(0, 6)}...${account.slice(-4)}</span>`
-    alert('Successfully switched to Arc Testnet!')
   } catch (error) {
-    console.error(error)
-    alert('Failed to switch network. Please add Arc Testnet manually in MetaMask (Chain ID: 5042002)')
+    alert('Please add Arc Testnet manually in MetaMask (Chain ID: 5042002)')
   }
 }
 
@@ -86,7 +82,6 @@ async function sendWithMemo() {
     return
   }
 
-  // Double check network before sending
   const currentChain = await walletClient.getChainId()
   if (currentChain !== ARC_TESTNET.id) {
     alert('Please switch to Arc Testnet first!')
@@ -94,10 +89,10 @@ async function sendWithMemo() {
   }
 
   const recipient = document.getElementById('recipient').value.trim()
-  const amount = document.getElementById('amount').value
+  const amountStr = document.getElementById('amount').value
   const memoText = document.getElementById('memo').value.trim()
 
-  if (!recipient || !amount) {
+  if (!recipient || !amountStr) {
     alert('Please fill recipient and amount')
     return
   }
@@ -106,7 +101,8 @@ async function sendWithMemo() {
     sendBtn.disabled = true
     sendBtn.textContent = 'Sending...'
 
-    const amountInWei = parseUnits(amount, 6)
+    // Правильно конвертируем сумму (USDC имеет 6 decimals)
+    const amountInWei = parseUnits(amountStr, 6)
 
     const hash = await walletClient.sendTransaction({
       account,
@@ -115,13 +111,16 @@ async function sendWithMemo() {
     })
 
     console.log('Transaction hash:', hash)
-    alert(`Transaction sent!\n\nHash: ${hash}`)
 
-    addToHistory(recipient, amount, memoText, hash)
+    // Добавляем в историю
+    addToHistory(recipient, amountStr, memoText, hash)
+    saveHistoryToStorage()
+
+    alert(`Transaction sent successfully!\n\nHash: ${hash}`)
 
   } catch (error) {
     console.error('Transaction error:', error)
-    alert('Transaction failed. Check console (F12) for details.')
+    alert('Transaction failed. Check console (F12).')
   } finally {
     sendBtn.disabled = false
     sendBtn.textContent = 'Send with Memo'
@@ -129,33 +128,63 @@ async function sendWithMemo() {
 }
 
 function addToHistory(recipient, amount, memo, txHash) {
-  const historyList = document.getElementById('historyList')
-
-  const div = document.createElement('div')
-  div.className = 'bg-zinc-900 border border-zinc-800 rounded-2xl p-4'
-  div.innerHTML = `
-    <div class="flex justify-between items-start">
-      <div>
-        <div class="font-mono text-emerald-400 text-lg">${amount} USDC</div>
-        <div class="text-xs text-zinc-500 mt-1">To: ${recipient.slice(0, 8)}...${recipient.slice(-6)}</div>
-        ${memo ? `<div class="text-sm mt-2 text-zinc-300">"${memo}"</div>` : ''}
-      </div>
-      <a href="https://testnet.arcscan.app/tx/${txHash}" target="_blank" 
-         class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition">View on Explorer</a>
-    </div>
-  `
-
-  if (historyList.children.length === 1 && historyList.children[0].classList.contains('text-zinc-500')) {
-    historyList.innerHTML = ''
+  const tx = {
+    recipient,
+    amount,
+    memo,
+    txHash,
+    timestamp: new Date().toISOString()
   }
 
-  historyList.prepend(div)
+  history.unshift(tx) // добавляем в начало
+
+  renderHistory()
 }
 
-document.getElementById('clearHistoryBtn').addEventListener('click', () => {
-  document.getElementById('historyList').innerHTML = `
-    <div class="text-zinc-500 text-center py-8 border border-dashed border-zinc-800 rounded-3xl">
-      Your payment history will appear here
-    </div>
-  `
-})
+function renderHistory() {
+  historyList.innerHTML = ''
+
+  if (history.length === 0) {
+    historyList.innerHTML = `
+      <div class="text-zinc-500 text-center py-8 border border-dashed border-zinc-800 rounded-3xl">
+        Your payment history will appear here
+      </div>
+    `
+    return
+  }
+
+  history.forEach(tx => {
+    const div = document.createElement('div')
+    div.className = 'bg-zinc-900 border border-zinc-800 rounded-2xl p-4'
+    div.innerHTML = `
+      <div class="flex justify-between items-start">
+        <div>
+          <div class="font-mono text-emerald-400 text-lg">${tx.amount} USDC</div>
+          <div class="text-xs text-zinc-500 mt-1">To: ${tx.recipient.slice(0, 8)}...${tx.recipient.slice(-6)}</div>
+          ${tx.memo ? `<div class="text-sm mt-2 text-zinc-300">"${tx.memo}"</div>` : ''}
+        </div>
+        <a href="https://testnet.arcscan.app/tx/${tx.txHash}" target="_blank" 
+           class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition">View</a>
+      </div>
+    `
+    historyList.appendChild(div)
+  })
+}
+
+function saveHistoryToStorage() {
+  localStorage.setItem('arcmemo_history', JSON.stringify(history))
+}
+
+function loadHistoryFromStorage() {
+  const saved = localStorage.getItem('arcmemo_history')
+  if (saved) {
+    history = JSON.parse(saved)
+    renderHistory()
+  }
+}
+
+function clearHistory() {
+  history = []
+  localStorage.removeItem('arcmemo_history')
+  renderHistory()
+}
