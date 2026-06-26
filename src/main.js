@@ -1,5 +1,5 @@
 import './style.css'
-import { createWalletClient, custom, parseUnits, getContract, formatUnits } from 'viem'
+import { createWalletClient, custom, parseUnits, formatUnits } from 'viem'
 
 const ARC_TESTNET = {
   id: 5042002,
@@ -10,7 +10,7 @@ const ARC_TESTNET = {
   },
 }
 
-const USDC_ADDRESS = '0x360000000000000000000000000000000000im0000'
+const USDC_ADDRESS = '0x3600000000000000000000000000000000000000'
 
 const erc20Abi = [
   {
@@ -32,41 +32,45 @@ const erc20Abi = [
   }
 ]
 
-let walletClient
-let account
+let walletClient = null
+let account = null
 let history = []
 
+// Элементы
 const connectBtn = document.getElementById('connectBtn')
 const sendBtn = document.getElementById('sendBtn')
 const walletStatus = document.getElementById('walletStatus')
 const historyList = document.getElementById('historyList')
-const balanceEl = document.getElementById('balance') || createBalanceElement()
 
-function createBalanceElement() {
-  const div = document.createElement('div')
-  div.id = 'balance'
-  div.className = 'text-sm text-zinc-400 mt-1'
-  walletStatus.parentNode.insertBefore(div, walletStatus.nextSibling)
-  return div
+// Создаём элемент для баланса
+let balanceEl = document.getElementById('balance')
+if (!balanceEl) {
+  balanceEl = document.createElement('div')
+  balanceEl.id = 'balance'
+  balanceEl.className = 'text-sm text-zinc-400 mt-1'
+  walletStatus.parentNode.insertBefore(balanceEl, walletStatus.nextSibling)
 }
 
-connectBtn.addEventListener('click', connectWallet)
+connectBtn.addEventListener('click', () => connectWallet(false))
 sendBtn.addEventListener('click', sendWithMemo)
 document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory)
 
+// Загружаем историю
 loadHistoryFromStorage()
-autoConnectWallet() // ← Автоподключение при загрузке
 
-async function autoConnectWallet() {
+// Автоматическое подключение при загрузке страницы
+autoConnect()
+
+async function autoConnect() {
   if (!window.ethereum) return
 
   try {
     const accounts = await window.ethereum.request({ method: 'eth_accounts' })
     if (accounts.length > 0) {
-      await connectWallet(true) // true = тихое подключение
+      await connectWallet(true) // тихое подключение
     }
-  } catch (error) {
-    console.log('Auto connect skipped')
+  } catch (err) {
+    console.log('Auto-connect skipped')
   }
 }
 
@@ -79,14 +83,15 @@ async function connectWallet(silent = false) {
   try {
     walletClient = createWalletClient({
       chain: ARC_TESTNET,
-      transport: custom(window.ethereum),
+      transport: custom(window.ethereum)
     })
 
     const [address] = await walletClient.requestAddresses()
     account = address
 
+    // Обновляем статус
     walletStatus.innerHTML = `
-      Connected: <span class="font-mono text-emerald-400">${address.slice(0, 6)}...${address.slice(-4)}</span>
+      Connected: <span class="font-mono text-emerald-400">${address.slice(0,6)}...${address.slice(-4)}</span>
       <button id="disconnectBtn" class="ml-3 text-xs px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded-lg">Disconnect</button>
     `
 
@@ -94,9 +99,13 @@ async function connectWallet(silent = false) {
     connectBtn.style.display = 'none'
 
     await updateBalance()
-    await checkAndSwitchNetwork()
+    await checkNetwork()
+
   } catch (error) {
-    if (!silent) alert('Failed to connect wallet')
+    if (!silent) {
+      console.error(error)
+      alert('Failed to connect wallet')
+    }
   }
 }
 
@@ -104,8 +113,8 @@ function disconnectWallet() {
   account = null
   walletClient = null
   walletStatus.innerHTML = 'Wallet not connected'
+  balanceEl.innerHTML = ''
   connectBtn.style.display = 'block'
-  document.getElementById('balance').innerHTML = ''
 }
 
 async function updateBalance() {
@@ -120,16 +129,123 @@ async function updateBalance() {
     })
 
     const formatted = formatUnits(balance, 6)
-    document.getElementById('balance').innerHTML = `Balance: <span class="text-emerald-400 font-medium">${formatted} USDC</span>`
+    balanceEl.innerHTML = `Balance: <span class="text-emerald-400 font-medium">${formatted} USDC</span>`
   } catch (error) {
-    console.error('Failed to fetch balance')
+    console.error('Balance fetch error:', error)
   }
 }
 
-async function checkAndSwitchNetwork() { /* ... код из предыдущей версии ... */ }
+async function checkNetwork() {
+  if (!walletClient) return
+  const chainId = await walletClient.getChainId()
+  if (chainId !== ARC_TESTNET.id) {
+    walletStatus.innerHTML += `<br><span class="text-red-400 text-xs">Switch to Arc Testnet</span>`
+  }
+}
 
-async function switchToArcTestnet() { /* ... */ }
+async function sendWithMemo() {
+  if (!account || !walletClient) {
+    alert('Please connect wallet first')
+    return
+  }
 
-async function sendWithMemo() { /* ... код из предыдущей версии (оставляем как есть) ... */ }
+  const recipient = document.getElementById('recipient').value.trim()
+  const amountStr = document.getElementById('amount').value
+  const memoText = document.getElementById('memo').value.trim()
 
-// Дальше идут функции addToHistory, renderHistory, save/load/clearHistory — они остаются без изменений
+  if (!recipient || !amountStr) {
+    alert('Please fill recipient and amount')
+    return
+  }
+
+  try {
+    sendBtn.disabled = true
+    sendBtn.textContent = 'Sending...'
+
+    const amountInWei = parseUnits(amountStr, 6)
+
+    const hash = await walletClient.writeContract({
+      account,
+      address: USDC_ADDRESS,
+      abi: erc20Abi,
+      functionName: 'transfer',
+      args: [recipient, amountInWei]
+    })
+
+    addToHistory(recipient, amountStr, memoText, hash)
+    saveHistoryToStorage()
+    await updateBalance()
+
+    alert(`Transaction sent!\nHash: ${hash}`)
+
+  } catch (error) {
+    console.error(error)
+    alert('Transaction failed. Check console.')
+  } finally {
+    sendBtn.disabled = false
+    sendBtn.textContent = 'Send with Memo'
+  }
+}
+
+// === История ===
+
+function addToHistory(recipient, amount, memo, txHash) {
+  const tx = {
+    recipient,
+    amount,
+    memo: memo || '',
+    txHash,
+    timestamp: new Date().toISOString()
+  }
+  history.unshift(tx)
+  renderHistory()
+}
+
+function renderHistory() {
+  historyList.innerHTML = ''
+
+  if (history.length === 0) {
+    historyList.innerHTML = `
+      <div class="text-zinc-500 text-center py-8 border border-dashed border-zinc-800 rounded-3xl">
+        Your payment history will appear here
+      </div>
+    `
+    return
+  }
+
+  history.forEach(tx => {
+    const div = document.createElement('div')
+    div.className = 'bg-zinc-900 border border-zinc-800 rounded-2xl p-4'
+    div.innerHTML = `
+      <div class="flex justify-between items-start">
+        <div>
+          <div class="font-mono text-emerald-400 text-lg">${tx.amount} USDC</div>
+          <div class="text-xs text-zinc-500 mt-1">To: ${tx.recipient.slice(0,8)}...${tx.recipient.slice(-6)}</div>
+          ${tx.memo ? `<div class="text-sm mt-2 text-zinc-300">"${tx.memo}"</div>` : ''}
+        </div>
+        <a href="https://testnet.arcscan.app/tx/${tx.txHash}" target="_blank" 
+           class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl">View</a>
+      </div>
+    `
+    historyList.appendChild(div)
+  })
+}
+
+function saveHistoryToStorage() {
+  localStorage.setItem('arcmemo_history', JSON.stringify(history))
+}
+
+function loadHistoryFromStorage() {
+  const saved = localStorage.getItem('arcmemo_history')
+  if (saved) {
+    history = JSON.parse(saved)
+    renderHistory()
+  }
+}
+
+function clearHistory() {
+  if (!confirm('Clear all history?')) return
+  history = []
+  localStorage.removeItem('arcmemo_history')
+  renderHistory()
+}
