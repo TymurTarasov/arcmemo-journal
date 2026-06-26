@@ -36,13 +36,13 @@ let walletClient = null
 let account = null
 let history = []
 
-// Элементы
+// Элементы DOM
 const connectBtn = document.getElementById('connectBtn')
 const sendBtn = document.getElementById('sendBtn')
 const walletStatus = document.getElementById('walletStatus')
 const historyList = document.getElementById('historyList')
 
-// Создаём элемент для баланса
+// Создаём элемент баланса
 let balanceEl = document.getElementById('balance')
 if (!balanceEl) {
   balanceEl = document.createElement('div')
@@ -55,11 +55,13 @@ connectBtn.addEventListener('click', () => connectWallet(false))
 sendBtn.addEventListener('click', sendWithMemo)
 document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory)
 
-// Загружаем историю
+// Загружаем историю из localStorage
 loadHistoryFromStorage()
 
 // Автоматическое подключение при загрузке страницы
 autoConnect()
+
+// ==================== ФУНКЦИИ ====================
 
 async function autoConnect() {
   if (!window.ethereum) return
@@ -67,10 +69,10 @@ async function autoConnect() {
   try {
     const accounts = await window.ethereum.request({ method: 'eth_accounts' })
     if (accounts.length > 0) {
-      await connectWallet(true) // тихое подключение
+      await connectWallet(true)
     }
   } catch (err) {
-    console.log('Auto-connect skipped')
+    console.log('Auto connect skipped')
   }
 }
 
@@ -89,7 +91,6 @@ async function connectWallet(silent = false) {
     const [address] = await walletClient.requestAddresses()
     account = address
 
-    // Обновляем статус
     walletStatus.innerHTML = `
       Connected: <span class="font-mono text-emerald-400">${address.slice(0,6)}...${address.slice(-4)}</span>
       <button id="disconnectBtn" class="ml-3 text-xs px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded-lg">Disconnect</button>
@@ -131,15 +132,46 @@ async function updateBalance() {
     const formatted = formatUnits(balance, 6)
     balanceEl.innerHTML = `Balance: <span class="text-emerald-400 font-medium">${formatted} USDC</span>`
   } catch (error) {
-    console.error('Balance fetch error:', error)
+    console.error('Balance error:', error)
+    balanceEl.innerHTML = `Balance: <span class="text-red-400">Error</span>`
   }
 }
 
 async function checkNetwork() {
   if (!walletClient) return
-  const chainId = await walletClient.getChainId()
-  if (chainId !== ARC_TESTNET.id) {
-    walletStatus.innerHTML += `<br><span class="text-red-400 text-xs">Switch to Arc Testnet</span>`
+
+  try {
+    const chainId = await walletClient.getChainId()
+
+    // Удаляем старое предупреждение
+    const oldWarning = document.getElementById('network-warning')
+    if (oldWarning) oldWarning.remove()
+
+    if (chainId !== ARC_TESTNET.id) {
+      const warning = document.createElement('div')
+      warning.id = 'network-warning'
+      warning.className = 'mt-2'
+      warning.innerHTML = `
+        <span class="text-red-400 text-sm">Wrong network!</span>
+        <button id="switchNetworkBtn" 
+                class="ml-2 text-xs px-3 py-1 bg-orange-500 text-black rounded-lg font-medium">
+          Switch to Arc Testnet
+        </button>
+      `
+      walletStatus.appendChild(warning)
+
+      document.getElementById('switchNetworkBtn').onclick = async () => {
+        try {
+          await walletClient.switchChain({ id: ARC_TESTNET.id })
+          warning.remove()
+          await updateBalance()
+        } catch (err) {
+          alert('Please add Arc Testnet manually in MetaMask (Chain ID: 5042002)')
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Network check failed')
   }
 }
 
@@ -180,14 +212,14 @@ async function sendWithMemo() {
 
   } catch (error) {
     console.error(error)
-    alert('Transaction failed. Check console.')
+    alert('Transaction failed. Check console (F12).')
   } finally {
     sendBtn.disabled = false
     sendBtn.textContent = 'Send with Memo'
   }
 }
 
-// === История ===
+// ==================== ИСТОРИЯ ====================
 
 function addToHistory(recipient, amount, memo, txHash) {
   const tx = {
@@ -224,7 +256,7 @@ function renderHistory() {
           ${tx.memo ? `<div class="text-sm mt-2 text-zinc-300">"${tx.memo}"</div>` : ''}
         </div>
         <a href="https://testnet.arcscan.app/tx/${tx.txHash}" target="_blank" 
-           class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl">View</a>
+           class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition">View</a>
       </div>
     `
     historyList.appendChild(div)
@@ -244,7 +276,7 @@ function loadHistoryFromStorage() {
 }
 
 function clearHistory() {
-  if (!confirm('Clear all history?')) return
+  if (!confirm('Clear all transaction history?')) return
   history = []
   localStorage.removeItem('arcmemo_history')
   renderHistory()
