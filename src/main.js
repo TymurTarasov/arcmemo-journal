@@ -1,5 +1,5 @@
 import './style.css'
-import { createWalletClient, custom, parseUnits, formatUnits } from 'viem'
+import { createWalletClient, custom, parseUnits, getContract } from 'viem'
 
 const ARC_TESTNET = {
   id: 5042002,
@@ -9,6 +9,22 @@ const ARC_TESTNET = {
     default: { http: ['https://rpc.testnet.arc.network'] },
   },
 }
+
+// USDC ERC-20 адрес на Arc Testnet
+const USDC_ADDRESS = '0x3600000000000000000000000000000000000000'
+
+const erc20Abi = [
+  {
+    name: 'transfer',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    outputs: [{ name: '', type: 'bool' }]
+  }
+]
 
 let walletClient
 let account
@@ -23,7 +39,6 @@ connectBtn.addEventListener('click', connectWallet)
 sendBtn.addEventListener('click', sendWithMemo)
 document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory)
 
-// Загружаем историю из localStorage при старте
 loadHistoryFromStorage()
 
 async function connectWallet() {
@@ -57,7 +72,7 @@ async function checkAndSwitchNetwork() {
   if (chainId !== ARC_TESTNET.id) {
     walletStatus.innerHTML = `
       Connected: <span class="font-mono text-emerald-400">${account.slice(0,6)}...${account.slice(-4)}</span><br>
-      <span class="text-red-400">Wrong network! Switch to Arc Testnet.</span>
+      <span class="text-red-400">Wrong network!</span>
     `
     const switchBtn = document.createElement('button')
     switchBtn.textContent = 'Switch to Arc Testnet'
@@ -72,7 +87,7 @@ async function switchToArcTestnet() {
     await walletClient.switchChain({ id: ARC_TESTNET.id })
     walletStatus.innerHTML = `Connected: <span class="font-mono text-emerald-400">${account.slice(0, 6)}...${account.slice(-4)}</span>`
   } catch (error) {
-    alert('Please add Arc Testnet manually in MetaMask (Chain ID: 5042002)')
+    alert('Please add Arc Testnet in MetaMask (Chain ID: 5042002)')
   }
 }
 
@@ -101,22 +116,23 @@ async function sendWithMemo() {
     sendBtn.disabled = true
     sendBtn.textContent = 'Sending...'
 
-    // Правильно конвертируем сумму (USDC имеет 6 decimals)
+    // Используем ERC-20 transfer с правильными 6 decimals
     const amountInWei = parseUnits(amountStr, 6)
 
-    const hash = await walletClient.sendTransaction({
+    const hash = await walletClient.writeContract({
       account,
-      to: recipient,
-      value: amountInWei,
+      address: USDC_ADDRESS,
+      abi: erc20Abi,
+      functionName: 'transfer',
+      args: [recipient, amountInWei],
     })
 
     console.log('Transaction hash:', hash)
 
-    // Добавляем в историю
     addToHistory(recipient, amountStr, memoText, hash)
     saveHistoryToStorage()
 
-    alert(`Transaction sent successfully!\n\nHash: ${hash}`)
+    alert(`Transaction sent!\n\nHash: ${hash}`)
 
   } catch (error) {
     console.error('Transaction error:', error)
@@ -128,16 +144,8 @@ async function sendWithMemo() {
 }
 
 function addToHistory(recipient, amount, memo, txHash) {
-  const tx = {
-    recipient,
-    amount,
-    memo,
-    txHash,
-    timestamp: new Date().toISOString()
-  }
-
-  history.unshift(tx) // добавляем в начало
-
+  const tx = { recipient, amount, memo, txHash, timestamp: new Date().toISOString() }
+  history.unshift(tx)
   renderHistory()
 }
 
