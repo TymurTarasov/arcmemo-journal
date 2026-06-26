@@ -1,5 +1,5 @@
 import './style.css'
-import { createWalletClient, custom, parseUnits, formatUnits } from 'viem'
+import { createWalletClient, custom, parseUnits, formatUnits, createPublicClient, http } from 'viem'
 
 const ARC_TESTNET = {
   id: 5042002,
@@ -36,13 +36,12 @@ let walletClient = null
 let account = null
 let history = []
 
-// Элементы DOM
 const connectBtn = document.getElementById('connectBtn')
 const sendBtn = document.getElementById('sendBtn')
 const walletStatus = document.getElementById('walletStatus')
 const historyList = document.getElementById('historyList')
 
-// Создаём элемент баланса
+// Элемент баланса
 let balanceEl = document.getElementById('balance')
 if (!balanceEl) {
   balanceEl = document.createElement('div')
@@ -51,29 +50,37 @@ if (!balanceEl) {
   walletStatus.parentNode.insertBefore(balanceEl, walletStatus.nextSibling)
 }
 
+// Публичный клиент для чтения данных
+const publicClient = createPublicClient({
+  chain: ARC_TESTNET,
+  transport: http('https://rpc.testnet.arc.network')
+})
+
 connectBtn.addEventListener('click', () => connectWallet(false))
 sendBtn.addEventListener('click', sendWithMemo)
 document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory)
 
-// Загружаем историю из localStorage
+// Загружаем историю
 loadHistoryFromStorage()
 
-// Автоматическое подключение при загрузке страницы
-autoConnect()
+// Улучшенное автоподключение (только если не отключали вручную)
+initWalletConnection()
 
 // ==================== ФУНКЦИИ ====================
 
-async function autoConnect() {
-  if (!window.ethereum) return
+function initWalletConnection() {
+  const wasConnected = localStorage.getItem('walletConnected') === 'true'
+  
+  if (!wasConnected || !window.ethereum) return
 
-  try {
-    const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+  // Проверяем, есть ли уже подключённые аккаунты
+  window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
     if (accounts.length > 0) {
-      await connectWallet(true)
+      connectWallet(true)
+    } else {
+      localStorage.setItem('walletConnected', 'false')
     }
-  } catch (err) {
-    console.log('Auto connect skipped')
-  }
+  }).catch(() => {})
 }
 
 async function connectWallet(silent = false) {
@@ -91,6 +98,8 @@ async function connectWallet(silent = false) {
     const [address] = await walletClient.requestAddresses()
     account = address
 
+    localStorage.setItem('walletConnected', 'true')
+
     walletStatus.innerHTML = `
       Connected: <span class="font-mono text-emerald-400">${address.slice(0,6)}...${address.slice(-4)}</span>
       <button id="disconnectBtn" class="ml-3 text-xs px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded-lg">Disconnect</button>
@@ -103,26 +112,26 @@ async function connectWallet(silent = false) {
     await checkNetwork()
 
   } catch (error) {
-    if (!silent) {
-      console.error(error)
-      alert('Failed to connect wallet')
-    }
+    if (!silent) alert('Failed to connect wallet')
+    localStorage.setItem('walletConnected', 'false')
   }
 }
 
 function disconnectWallet() {
   account = null
   walletClient = null
+  localStorage.setItem('walletConnected', 'false')
+
   walletStatus.innerHTML = 'Wallet not connected'
   balanceEl.innerHTML = ''
   connectBtn.style.display = 'block'
 }
 
 async function updateBalance() {
-  if (!account || !walletClient) return
+  if (!account) return
 
   try {
-    const balance = await walletClient.readContract({
+    const balance = await publicClient.readContract({
       address: USDC_ADDRESS,
       abi: erc20Abi,
       functionName: 'balanceOf',
@@ -133,7 +142,7 @@ async function updateBalance() {
     balanceEl.innerHTML = `Balance: <span class="text-emerald-400 font-medium">${formatted} USDC</span>`
   } catch (error) {
     console.error('Balance error:', error)
-    balanceEl.innerHTML = `Balance: <span class="text-red-400">Error</span>`
+    balanceEl.innerHTML = `Balance: <span class="text-red-400">Error loading balance</span>`
   }
 }
 
@@ -143,7 +152,6 @@ async function checkNetwork() {
   try {
     const chainId = await walletClient.getChainId()
 
-    // Удаляем старое предупреждение
     const oldWarning = document.getElementById('network-warning')
     if (oldWarning) oldWarning.remove()
 
@@ -153,8 +161,7 @@ async function checkNetwork() {
       warning.className = 'mt-2'
       warning.innerHTML = `
         <span class="text-red-400 text-sm">Wrong network!</span>
-        <button id="switchNetworkBtn" 
-                class="ml-2 text-xs px-3 py-1 bg-orange-500 text-black rounded-lg font-medium">
+        <button id="switchNetworkBtn" class="ml-2 text-xs px-3 py-1 bg-orange-500 text-black rounded-lg font-medium">
           Switch to Arc Testnet
         </button>
       `
@@ -165,7 +172,7 @@ async function checkNetwork() {
           await walletClient.switchChain({ id: ARC_TESTNET.id })
           warning.remove()
           await updateBalance()
-        } catch (err) {
+        } catch {
           alert('Please add Arc Testnet manually in MetaMask (Chain ID: 5042002)')
         }
       }
@@ -212,7 +219,7 @@ async function sendWithMemo() {
 
   } catch (error) {
     console.error(error)
-    alert('Transaction failed. Check console (F12).')
+    alert('Transaction failed. Check console.')
   } finally {
     sendBtn.disabled = false
     sendBtn.textContent = 'Send with Memo'
@@ -276,7 +283,7 @@ function loadHistoryFromStorage() {
 }
 
 function clearHistory() {
-  if (!confirm('Clear all transaction history?')) return
+  if (!confirm('Clear all history?')) return
   history = []
   localStorage.removeItem('arcmemo_history')
   renderHistory()
