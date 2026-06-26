@@ -41,7 +41,6 @@ const sendBtn = document.getElementById('sendBtn')
 const walletStatus = document.getElementById('walletStatus')
 const historyList = document.getElementById('historyList')
 
-// Элемент баланса
 let balanceEl = document.getElementById('balance')
 if (!balanceEl) {
   balanceEl = document.createElement('div')
@@ -50,7 +49,6 @@ if (!balanceEl) {
   walletStatus.parentNode.insertBefore(balanceEl, walletStatus.nextSibling)
 }
 
-// Публичный клиент для чтения данных
 const publicClient = createPublicClient({
   chain: ARC_TESTNET,
   transport: http('https://rpc.testnet.arc.network')
@@ -60,20 +58,15 @@ connectBtn.addEventListener('click', () => connectWallet(false))
 sendBtn.addEventListener('click', sendWithMemo)
 document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory)
 
-// Загружаем историю
 loadHistoryFromStorage()
-
-// Улучшенное автоподключение (только если не отключали вручную)
 initWalletConnection()
 
 // ==================== ФУНКЦИИ ====================
 
 function initWalletConnection() {
   const wasConnected = localStorage.getItem('walletConnected') === 'true'
-  
   if (!wasConnected || !window.ethereum) return
 
-  // Проверяем, есть ли уже подключённые аккаунты
   window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
     if (accounts.length > 0) {
       connectWallet(true)
@@ -141,8 +134,7 @@ async function updateBalance() {
     const formatted = formatUnits(balance, 6)
     balanceEl.innerHTML = `Balance: <span class="text-emerald-400 font-medium">${formatted} USDC</span>`
   } catch (error) {
-    console.error('Balance error:', error)
-    balanceEl.innerHTML = `Balance: <span class="text-red-400">Error loading balance</span>`
+    balanceEl.innerHTML = `Balance: <span class="text-red-400">Error</span>`
   }
 }
 
@@ -151,7 +143,6 @@ async function checkNetwork() {
 
   try {
     const chainId = await walletClient.getChainId()
-
     const oldWarning = document.getElementById('network-warning')
     if (oldWarning) oldWarning.remove()
 
@@ -177,9 +168,7 @@ async function checkNetwork() {
         }
       }
     }
-  } catch (error) {
-    console.error('Network check failed')
-  }
+  } catch (error) {}
 }
 
 async function sendWithMemo() {
@@ -219,25 +208,51 @@ async function sendWithMemo() {
 
   } catch (error) {
     console.error(error)
-    alert('Transaction failed. Check console.')
+    alert('Transaction failed.')
   } finally {
     sendBtn.disabled = false
     sendBtn.textContent = 'Send with Memo'
   }
 }
 
-// ==================== ИСТОРИЯ ====================
+// ==================== ГРУППИРОВКА ПО ДАТАМ ====================
 
-function addToHistory(recipient, amount, memo, txHash) {
-  const tx = {
-    recipient,
-    amount,
-    memo: memo || '',
-    txHash,
-    timestamp: new Date().toISOString()
-  }
-  history.unshift(tx)
-  renderHistory()
+function groupTransactionsByDate(transactions) {
+  const groups = {}
+
+  transactions.forEach(tx => {
+    const date = new Date(tx.timestamp)
+    const dateKey = date.toISOString().split('T')[0] // YYYY-MM-DD
+
+    if (!groups[dateKey]) {
+      groups[dateKey] = {
+        date: dateKey,
+        total: 0,
+        transactions: []
+      }
+    }
+
+    groups[dateKey].total += parseFloat(tx.amount)
+    groups[dateKey].transactions.push(tx)
+  })
+
+  // Сортируем даты от новых к старым
+  return Object.values(groups).sort((a, b) => b.date.localeCompare(a.date))
+}
+
+function formatDate(dateStr) {
+  const date = new Date(dateStr)
+  const today = new Date().toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+
+  if (dateStr === today) return 'Today'
+  if (dateStr === yesterday) return 'Yesterday'
+
+  return date.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric',
+    year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+  })
 }
 
 function renderHistory() {
@@ -252,22 +267,57 @@ function renderHistory() {
     return
   }
 
-  history.forEach(tx => {
-    const div = document.createElement('div')
-    div.className = 'bg-zinc-900 border border-zinc-800 rounded-2xl p-4'
-    div.innerHTML = `
-      <div class="flex justify-between items-start">
-        <div>
-          <div class="font-mono text-emerald-400 text-lg">${tx.amount} USDC</div>
-          <div class="text-xs text-zinc-500 mt-1">To: ${tx.recipient.slice(0,8)}...${tx.recipient.slice(-6)}</div>
-          ${tx.memo ? `<div class="text-sm mt-2 text-zinc-300">"${tx.memo}"</div>` : ''}
-        </div>
-        <a href="https://testnet.arcscan.app/tx/${tx.txHash}" target="_blank" 
-           class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition">View</a>
-      </div>
+  const grouped = groupTransactionsByDate(history)
+
+  grouped.forEach(group => {
+    const groupDiv = document.createElement('div')
+    groupDiv.className = 'mb-6'
+
+    const header = document.createElement('div')
+    header.className = 'flex justify-between items-center px-1 mb-2'
+    header.innerHTML = `
+      <div class="font-semibold text-lg">${formatDate(group.date)}</div>
+      <div class="font-mono text-emerald-400 font-medium">${group.total.toFixed(2)} USDC</div>
     `
-    historyList.appendChild(div)
+
+    const transactionsContainer = document.createElement('div')
+    transactionsContainer.className = 'space-y-3'
+
+    group.transactions.forEach(tx => {
+      const txDiv = document.createElement('div')
+      txDiv.className = 'bg-zinc-900 border border-zinc-800 rounded-2xl p-4'
+      txDiv.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-mono text-emerald-400 text-lg">${tx.amount} USDC</div>
+            <div class="text-xs text-zinc-500 mt-1">To: ${tx.recipient.slice(0,8)}...${tx.recipient.slice(-6)}</div>
+            ${tx.memo ? `<div class="text-sm mt-2 text-zinc-300">"${tx.memo}"</div>` : ''}
+          </div>
+          <a href="https://testnet.arcscan.app/tx/${tx.txHash}" target="_blank" 
+             class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition">View</a>
+        </div>
+      `
+      transactionsContainer.appendChild(txDiv)
+    })
+
+    groupDiv.appendChild(header)
+    groupDiv.appendChild(transactionsContainer)
+    historyList.appendChild(groupDiv)
   })
+}
+
+// ==================== ИСТОРИЯ (хранение) ====================
+
+function addToHistory(recipient, amount, memo, txHash) {
+  const tx = {
+    recipient,
+    amount,
+    memo: memo || '',
+    txHash,
+    timestamp: new Date().toISOString()
+  }
+  history.unshift(tx)
+  renderHistory()
 }
 
 function saveHistoryToStorage() {
