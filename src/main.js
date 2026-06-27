@@ -35,11 +35,20 @@ const erc20Abi = [
 let walletClient = null
 let account = null
 let history = []
+let currentCalendarDate = new Date()
 
 const connectBtn = document.getElementById('connectBtn')
 const sendBtn = document.getElementById('sendBtn')
 const walletStatus = document.getElementById('walletStatus')
 const historyList = document.getElementById('historyList')
+const calendarBtn = document.getElementById('calendarBtn')
+const calendarModal = document.getElementById('calendarModal')
+const calendarGrid = document.getElementById('calendarGrid')
+const calendarTitle = document.getElementById('calendarTitle')
+const dayDetails = document.getElementById('dayDetails')
+const selectedDateEl = document.getElementById('selectedDate')
+const dayTotalEl = document.getElementById('dayTotal')
+const dayTransactionsEl = document.getElementById('dayTransactions')
 
 let balanceEl = document.getElementById('balance')
 if (!balanceEl) {
@@ -57,26 +66,16 @@ const publicClient = createPublicClient({
 connectBtn.addEventListener('click', () => connectWallet(false))
 sendBtn.addEventListener('click', sendWithMemo)
 document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory)
-
-// Добавляем кнопку Export CSV
-addExportButton()
+document.getElementById('exportBtn').addEventListener('click', exportToCSV)
+calendarBtn.addEventListener('click', showCalendar)
+document.getElementById('closeCalendar').addEventListener('click', () => calendarModal.classList.add('hidden'))
+document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1))
+document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1))
 
 loadHistoryFromStorage()
 initWalletConnection()
 
-// ==================== ФУНКЦИИ ====================
-
-function addExportButton() {
-  const clearBtn = document.getElementById('clearHistoryBtn')
-  if (!clearBtn) return
-
-  const exportBtn = document.createElement('button')
-  exportBtn.textContent = 'Export CSV'
-  exportBtn.className = 'text-sm px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-xl text-zinc-300 ml-2'
-  exportBtn.onclick = exportToCSV
-
-  clearBtn.parentNode.insertBefore(exportBtn, clearBtn.nextSibling)
-}
+// ==================== WALLET ====================
 
 function initWalletConnection() {
   const wasConnected = localStorage.getItem('walletConnected') === 'true'
@@ -186,6 +185,8 @@ async function checkNetwork() {
   } catch (error) {}
 }
 
+// ==================== SEND ====================
+
 async function sendWithMemo() {
   if (!account || !walletClient) {
     alert('Please connect wallet first')
@@ -231,7 +232,7 @@ async function sendWithMemo() {
   }
 }
 
-// ==================== КАТЕГОРИИ + ГРУППИРОВКА ====================
+// ==================== HISTORY + CATEGORIES + DATE GROUPING ====================
 
 function addToHistory(recipient, amount, memo, category, txHash) {
   const tx = {
@@ -251,15 +252,9 @@ function groupTransactionsByDate(transactions) {
 
   transactions.forEach(tx => {
     const dateKey = new Date(tx.timestamp).toISOString().split('T')[0]
-
     if (!groups[dateKey]) {
-      groups[dateKey] = {
-        date: dateKey,
-        total: 0,
-        transactions: []
-      }
+      groups[dateKey] = { date: dateKey, total: 0, transactions: [] }
     }
-
     groups[dateKey].total += parseFloat(tx.amount)
     groups[dateKey].transactions.push(tx)
   })
@@ -324,7 +319,6 @@ function renderHistory() {
     group.transactions.forEach(tx => {
       const txDiv = document.createElement('div')
       txDiv.className = 'bg-zinc-900 border border-zinc-800 rounded-2xl p-4'
-      
       const categoryColor = getCategoryColor(tx.category)
       
       txDiv.innerHTML = `
@@ -350,7 +344,102 @@ function renderHistory() {
   })
 }
 
-// ==================== ЭКСПОРТ В CSV ====================
+// ==================== CALENDAR ====================
+
+function showCalendar() {
+  calendarModal.classList.remove('hidden')
+  renderCalendar(currentCalendarDate)
+}
+
+function changeMonth(delta) {
+  currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta)
+  renderCalendar(currentCalendarDate)
+}
+
+function renderCalendar(date) {
+  calendarGrid.innerHTML = ''
+  dayDetails.classList.add('hidden')
+
+  const year = date.getFullYear()
+  const month = date.getMonth()
+
+  calendarTitle.textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+  // Дни недели
+  const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+  weekdays.forEach(day => {
+    const el = document.createElement('div')
+    el.className = 'text-zinc-500 text-xs py-1'
+    el.textContent = day
+    calendarGrid.appendChild(el)
+  })
+
+  // Пустые дни в начале
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement('div')
+    calendarGrid.appendChild(empty)
+  }
+
+  // Дни месяца
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dayEl = document.createElement('div')
+    dayEl.className = 'py-2 text-center rounded-xl cursor-pointer hover:bg-zinc-800 text-sm'
+
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const dayTransactions = history.filter(tx => 
+      new Date(tx.timestamp).toISOString().split('T')[0] === dateStr
+    )
+
+    if (dayTransactions.length > 0) {
+      dayEl.classList.add('bg-emerald-900/30', 'font-medium', 'text-emerald-400')
+    }
+
+    dayEl.textContent = day
+    dayEl.onclick = () => showDayInCalendar(dateStr, dayTransactions)
+
+    calendarGrid.appendChild(dayEl)
+  }
+}
+
+function showDayInCalendar(dateStr, transactions) {
+  dayDetails.classList.remove('hidden')
+  selectedDateEl.textContent = new Date(dateStr).toLocaleDateString('en-US', { 
+    weekday: 'long', month: 'long', day: 'numeric' 
+  })
+
+  const total = transactions.reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+  dayTotalEl.textContent = `${total.toFixed(2)} USDC`
+
+  dayTransactionsEl.innerHTML = ''
+
+  if (transactions.length === 0) {
+    dayTransactionsEl.innerHTML = `<div class="text-zinc-500 text-sm">No transactions on this day</div>`
+    return
+  }
+
+  transactions.forEach(tx => {
+    const div = document.createElement('div')
+    div.className = 'bg-zinc-800 rounded-xl p-3 text-sm'
+    const categoryColor = getCategoryColor(tx.category)
+    
+    div.innerHTML = `
+      <div class="flex justify-between">
+        <div>
+          <span class="font-mono text-emerald-400">${tx.amount} USDC</span>
+          <span class="ml-2 text-xs px-2 py-0.5 rounded-full ${categoryColor} text-white">${tx.category}</span>
+        </div>
+        <a href="https://testnet.arcscan.app/tx/${tx.txHash}" target="_blank" class="text-xs text-zinc-400">View</a>
+      </div>
+      ${tx.memo ? `<div class="text-zinc-400 text-xs mt-1">"${tx.memo}"</div>` : ''}
+    `
+    dayTransactionsEl.appendChild(div)
+  })
+}
+
+// ==================== EXPORT CSV ====================
 
 function exportToCSV() {
   if (history.length === 0) {
@@ -358,39 +447,23 @@ function exportToCSV() {
     return
   }
 
-  const headers = ['Date', 'Amount (USDC)', 'Recipient', 'Category', 'Memo', 'Tx Hash']
-  
-  const rows = history.map(tx => {
+  const headers = ['Date', 'Amount', 'Recipient', 'Category', 'Memo', 'Tx Hash']
+  let csv = headers.join(',') + '\n'
+
+  history.forEach(tx => {
     const date = new Date(tx.timestamp).toLocaleDateString()
-    return [
-      date,
-      tx.amount,
-      tx.recipient,
-      tx.category,
-      tx.memo.replace(/"/g, '""'),
-      tx.txHash
-    ]
+    csv += `"${date}","${tx.amount}","${tx.recipient}","${tx.category}","${tx.memo}","${tx.txHash}"\n`
   })
 
-  let csvContent = headers.join(',') + '\n'
-  
-  rows.forEach(row => {
-    csvContent += row.map(field => `"${field}"`).join(',') + '\n'
-  })
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
+  const blob = new Blob([csv], { type: 'text/csv' })
   const url = URL.createObjectURL(blob)
-  
-  link.setAttribute('href', url)
-  link.setAttribute('download', `arcmemo_history_${new Date().toISOString().split('T')[0]}.csv`)
-  link.style.visibility = 'hidden'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `arcmemo_history_${new Date().toISOString().split('T')[0]}.csv`
+  a.click()
 }
 
-// ==================== ИСТОРИЯ ====================
+// ==================== HISTORY STORAGE ====================
 
 function saveHistoryToStorage() {
   localStorage.setItem('arcmemo_history', JSON.stringify(history))
