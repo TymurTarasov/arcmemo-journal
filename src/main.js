@@ -58,10 +58,25 @@ connectBtn.addEventListener('click', () => connectWallet(false))
 sendBtn.addEventListener('click', sendWithMemo)
 document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory)
 
+// Добавляем кнопку Export CSV
+addExportButton()
+
 loadHistoryFromStorage()
 initWalletConnection()
 
 // ==================== ФУНКЦИИ ====================
+
+function addExportButton() {
+  const clearBtn = document.getElementById('clearHistoryBtn')
+  if (!clearBtn) return
+
+  const exportBtn = document.createElement('button')
+  exportBtn.textContent = 'Export CSV'
+  exportBtn.className = 'text-sm px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-xl text-zinc-300 ml-2'
+  exportBtn.onclick = exportToCSV
+
+  clearBtn.parentNode.insertBefore(exportBtn, clearBtn.nextSibling)
+}
 
 function initWalletConnection() {
   const wasConnected = localStorage.getItem('walletConnected') === 'true'
@@ -180,6 +195,7 @@ async function sendWithMemo() {
   const recipient = document.getElementById('recipient').value.trim()
   const amountStr = document.getElementById('amount').value
   const memoText = document.getElementById('memo').value.trim()
+  const category = document.getElementById('category').value
 
   if (!recipient || !amountStr) {
     alert('Please fill recipient and amount')
@@ -200,7 +216,7 @@ async function sendWithMemo() {
       args: [recipient, amountInWei]
     })
 
-    addToHistory(recipient, amountStr, memoText, hash)
+    addToHistory(recipient, amountStr, memoText, category, hash)
     saveHistoryToStorage()
     await updateBalance()
 
@@ -215,14 +231,26 @@ async function sendWithMemo() {
   }
 }
 
-// ==================== ГРУППИРОВКА ПО ДАТАМ ====================
+// ==================== КАТЕГОРИИ + ГРУППИРОВКА ====================
+
+function addToHistory(recipient, amount, memo, category, txHash) {
+  const tx = {
+    recipient,
+    amount,
+    memo: memo || '',
+    category: category || 'Other',
+    txHash,
+    timestamp: new Date().toISOString()
+  }
+  history.unshift(tx)
+  renderHistory()
+}
 
 function groupTransactionsByDate(transactions) {
   const groups = {}
 
   transactions.forEach(tx => {
-    const date = new Date(tx.timestamp)
-    const dateKey = date.toISOString().split('T')[0] // YYYY-MM-DD
+    const dateKey = new Date(tx.timestamp).toISOString().split('T')[0]
 
     if (!groups[dateKey]) {
       groups[dateKey] = {
@@ -236,7 +264,6 @@ function groupTransactionsByDate(transactions) {
     groups[dateKey].transactions.push(tx)
   })
 
-  // Сортируем даты от новых к старым
   return Object.values(groups).sort((a, b) => b.date.localeCompare(a.date))
 }
 
@@ -253,6 +280,17 @@ function formatDate(dateStr) {
     day: 'numeric',
     year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
   })
+}
+
+function getCategoryColor(category) {
+  const colors = {
+    'Payment': 'bg-blue-600',
+    'Gift': 'bg-pink-600',
+    'Work': 'bg-purple-600',
+    'Test': 'bg-yellow-600',
+    'Other': 'bg-zinc-600'
+  }
+  return colors[category] || 'bg-zinc-600'
 }
 
 function renderHistory() {
@@ -286,10 +324,16 @@ function renderHistory() {
     group.transactions.forEach(tx => {
       const txDiv = document.createElement('div')
       txDiv.className = 'bg-zinc-900 border border-zinc-800 rounded-2xl p-4'
+      
+      const categoryColor = getCategoryColor(tx.category)
+      
       txDiv.innerHTML = `
         <div class="flex justify-between items-start">
-          <div>
-            <div class="font-mono text-emerald-400 text-lg">${tx.amount} USDC</div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-emerald-400 text-lg">${tx.amount} USDC</span>
+              <span class="text-xs px-2 py-0.5 rounded-full ${categoryColor} text-white">${tx.category}</span>
+            </div>
             <div class="text-xs text-zinc-500 mt-1">To: ${tx.recipient.slice(0,8)}...${tx.recipient.slice(-6)}</div>
             ${tx.memo ? `<div class="text-sm mt-2 text-zinc-300">"${tx.memo}"</div>` : ''}
           </div>
@@ -306,19 +350,47 @@ function renderHistory() {
   })
 }
 
-// ==================== ИСТОРИЯ (хранение) ====================
+// ==================== ЭКСПОРТ В CSV ====================
 
-function addToHistory(recipient, amount, memo, txHash) {
-  const tx = {
-    recipient,
-    amount,
-    memo: memo || '',
-    txHash,
-    timestamp: new Date().toISOString()
+function exportToCSV() {
+  if (history.length === 0) {
+    alert('No transactions to export')
+    return
   }
-  history.unshift(tx)
-  renderHistory()
+
+  const headers = ['Date', 'Amount (USDC)', 'Recipient', 'Category', 'Memo', 'Tx Hash']
+  
+  const rows = history.map(tx => {
+    const date = new Date(tx.timestamp).toLocaleDateString()
+    return [
+      date,
+      tx.amount,
+      tx.recipient,
+      tx.category,
+      tx.memo.replace(/"/g, '""'),
+      tx.txHash
+    ]
+  })
+
+  let csvContent = headers.join(',') + '\n'
+  
+  rows.forEach(row => {
+    csvContent += row.map(field => `"${field}"`).join(',') + '\n'
+  })
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  
+  link.setAttribute('href', url)
+  link.setAttribute('download', `arcmemo_history_${new Date().toISOString().split('T')[0]}.csv`)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
+
+// ==================== ИСТОРИЯ ====================
 
 function saveHistoryToStorage() {
   localStorage.setItem('arcmemo_history', JSON.stringify(history))
