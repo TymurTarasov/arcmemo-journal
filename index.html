@@ -3,152 +3,196 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ArcMemoJournal • Your USDC Payment Journal on Arc</title>
-  <link rel="stylesheet" href="/src/style.css">
+    <title>ArcMemoJournal • USDC Payment Journal on Arc</title>
+    <link rel="stylesheet" href="/src/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-zinc-950 text-white">
-    <div class="max-w-4xl mx-auto px-6 py-10">
-      
+  <body class="bg-[#0a0a0f] text-white min-h-screen" style="font-family:'Inter',sans-serif">
+
+    <!-- Background glow -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden">
+      <div class="absolute top-[-20%] left-[30%] w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px]"></div>
+      <div class="absolute bottom-[-10%] right-[20%] w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]"></div>
+    </div>
+
+    <div class="relative max-w-3xl mx-auto px-5 py-10">
+
       <!-- Header -->
-      <div class="flex items-center justify-between mb-10">
+      <div class="flex items-center justify-between mb-12">
         <div class="flex items-center gap-3">
-          <img src="/logo.png" alt="ArcMemoJournal Logo" class="w-11 h-11">
-          <h1 class="text-4xl font-bold tracking-tight">ArcMemoJournal</h1>
+          <div class="w-9 h-9 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg">◈</div>
+          <span class="text-lg font-semibold tracking-tight">ArcMemo</span>
+          <span class="text-xs px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded-full border border-zinc-700">Testnet</span>
         </div>
         <div class="flex items-center gap-3">
-          <button id="calendarBtn"
-            class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm flex items-center gap-2">
-            📅 Calendar
+          <div id="balanceDisplay" class="text-sm font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-2xl"></div>
+          <div id="walletStatus" class="text-sm text-zinc-400"></div>
+          <button id="calendarBtn" class="w-10 h-10 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-2xl flex items-center justify-center text-zinc-400 hover:text-white transition">
+            📅
           </button>
-          <button id="connectBtn"
-            class="px-6 py-3 bg-white text-black font-medium rounded-2xl hover:bg-zinc-200 transition">
+          <button id="connectBtn" class="px-5 py-2.5 bg-white text-black text-sm font-medium rounded-2xl hover:bg-zinc-100 transition">
             Connect Wallet
           </button>
         </div>
       </div>
 
-      <!-- Wallet Status -->
-    <div class="flex items-center gap-4 mb-6">
-  <div id="walletStatus" class="text-sm text-zinc-400"></div>
-  <div id="balanceDisplay" class="text-sm font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl"></div>
-</div>
+      <!-- Send Card -->
+      <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-3xl p-7 mb-5 backdrop-blur-sm">
+        <div class="flex items-center gap-2 mb-6">
+          <div class="w-1.5 h-5 bg-emerald-500 rounded-full"></div>
+          <h2 class="text-base font-semibold">Send USDC</h2>
+        </div>
 
-      <!-- Send Form -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 mb-10">
-        <h2 class="text-2xl font-semibold mb-6">Send USDC with Memo</h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-4">
+          <!-- Recipient -->
           <div>
             <div class="flex justify-between items-center mb-2">
-              <label class="text-sm text-zinc-400">Recipient Address</label>
-              <button id="chooseContactBtn" 
-                class="text-xs px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded-lg">
-                Choose from contacts
+              <label class="text-xs text-zinc-500 font-medium uppercase tracking-wider">Recipient</label>
+              <button id="chooseContactBtn" class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 rounded-xl transition">
+                From contacts ↓
               </button>
             </div>
             <input id="recipient" type="text" placeholder="0x..."
-              class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
+              class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-3 text-sm outline-none transition placeholder:text-zinc-600">
           </div>
 
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Amount -->
+            <div>
+              <label class="block text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2">Amount (USDC)</label>
+              <input id="amount" type="number" value="1" step="0.01"
+                class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-3 text-sm outline-none transition">
+            </div>
+            <!-- Category -->
+            <div>
+              <label class="block text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2">Category</label>
+              <select id="category"
+                class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-3 text-sm outline-none transition">
+                <option value="Payment">Payment</option>
+                <option value="Gift">Gift</option>
+                <option value="Work">Work</option>
+                <option value="Other" selected>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Saved categories -->
+          <div id="savedCategoriesBar" class="hidden">
+            <label class="text-xs text-zinc-500 font-medium uppercase tracking-wider block mb-2">Your categories</label>
+            <div id="savedCategoriesList" class="flex flex-wrap gap-2"></div>
+            <div class="flex gap-2 mt-3">
+              <input id="newCategoryInput" type="text" placeholder="New category name..."
+                class="flex-1 bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-xl px-3 py-2 text-sm outline-none transition placeholder:text-zinc-600">
+              <button id="addCategoryBtn" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-sm text-zinc-300 rounded-xl transition">
+                + Add
+              </button>
+            </div>
+          </div>
+
+          <!-- Memo -->
           <div>
-            <label class="block text-sm text-zinc-400 mb-2">Amount (USDC)</label>
-            <input id="amount" type="number" value="1" step="0.01"
-              class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
+            <label class="block text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2">Memo</label>
+            <textarea id="memo" rows="2" placeholder="Add a note..."
+              class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-3 text-sm outline-none transition resize-none placeholder:text-zinc-600"></textarea>
           </div>
         </div>
 
-        <div class="mt-6">
-          <label class="block text-sm text-zinc-400 mb-2">Memo / Note</label>
-          <textarea id="memo" rows="3" placeholder="e.g. Test payment, Thanks for help..."
-            class="w-full bg-zinc-950 border border-zinc-700 rounded-3xl px-4 py-3 text-sm resize-y"></textarea>
-        </div>
-
-        <div class="mt-4">
-          <label class="block text-sm text-zinc-400 mb-2">Category</label>
-          <div class="flex gap-2">
-<div class="flex gap-2">
-  <select id="category" class="flex-1 bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
-    <option value="Payment">Payment</option>
-    <option value="Gift">Gift</option>
-    <option value="Work">Work</option>
-    <option value="Other" selected>Other</option>
-    <option value="custom">✏️ Custom category...</option>
-  </select>
-  <input id="customCategory" type="text" placeholder="Category name..."
-    class="hidden flex-1 bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
-</div>
-<div id="savedCategories" class="flex flex-wrap gap-2 mt-3"></div>
-        </div>
-
-        <button id="sendBtn"
-          class="mt-8 w-full bg-emerald-500 hover:bg-emerald-600 transition text-black font-semibold py-4 rounded-2xl text-lg">
-          Send with Memo
+        <button id="sendBtn" class="mt-6 w-full bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 transition text-black font-semibold py-3.5 rounded-2xl text-sm">
+          Send with Memo →
         </button>
       </div>
 
-      <!-- Contacts Section -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 mb-10">
-        <h2 class="text-2xl font-semibold mb-6">Contacts</h2>
-        
-        <div class="flex gap-3 mb-4">
-          <input id="contactName" type="text" placeholder="Name" 
-            class="flex-1 bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
-          <input id="contactAddress" type="text" placeholder="0x..." 
-            class="flex-1 bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
-          <button id="addContactBtn"
-            class="px-6 bg-emerald-500 hover:bg-emerald-600 text-black font-medium rounded-2xl">
-            Add
-          </button>
+      <!-- Two column: Contacts + Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+
+        <!-- Contacts -->
+        <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-3xl p-6 backdrop-blur-sm">
+          <div class="flex items-center gap-2 mb-5">
+            <div class="w-1.5 h-5 bg-blue-500 rounded-full"></div>
+            <h2 class="text-base font-semibold">Contacts</h2>
+          </div>
+          <div class="space-y-2 mb-4">
+            <input id="contactName" type="text" placeholder="Name"
+              class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-sm outline-none transition placeholder:text-zinc-600">
+            <input id="contactAddress" type="text" placeholder="0x..."
+              class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-sm outline-none transition placeholder:text-zinc-600">
+            <button id="addContactBtn" class="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-sm text-zinc-200 rounded-2xl transition">
+              + Add Contact
+            </button>
+          </div>
+          <div id="contactsList" class="space-y-2 max-h-48 overflow-y-auto"></div>
         </div>
 
-        <div id="contactsList" class="space-y-2"></div>
+        <!-- Quick stats -->
+        <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-3xl p-6 backdrop-blur-sm">
+          <div class="flex items-center gap-2 mb-5">
+            <div class="w-1.5 h-5 bg-purple-500 rounded-full"></div>
+            <h2 class="text-base font-semibold">Stats</h2>
+          </div>
+          <div id="statsBlock" class="space-y-3">
+            <div class="flex justify-between items-center py-2 border-b border-zinc-800">
+              <span class="text-xs text-zinc-500">Total sent</span>
+              <span id="statTotal" class="text-sm font-mono text-emerald-400">—</span>
+            </div>
+            <div class="flex justify-between items-center py-2 border-b border-zinc-800">
+              <span class="text-xs text-zinc-500">Transactions</span>
+              <span id="statCount" class="text-sm font-mono text-white">—</span>
+            </div>
+            <div class="flex justify-between items-center py-2 border-b border-zinc-800">
+              <span class="text-xs text-zinc-500">Contacts</span>
+              <span id="statContacts" class="text-sm font-mono text-white">—</span>
+            </div>
+            <div class="flex justify-between items-center py-2">
+              <span class="text-xs text-zinc-500">Last payment</span>
+              <span id="statLast" class="text-xs font-mono text-zinc-400">—</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- History -->
-      <div>
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-2xl font-semibold">My Sent Payments</h2>
-          <div class="flex gap-2 items-center">
-            <input id="searchInput" type="text" placeholder="Search..." 
-              class="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm w-64">
-            <button id="exportBtn"
-              class="text-sm px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-xl text-zinc-300">
-              Export CSV
+      <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-3xl p-6 backdrop-blur-sm">
+        <div class="flex items-center justify-between mb-5">
+          <div class="flex items-center gap-2">
+            <div class="w-1.5 h-5 bg-orange-500 rounded-full"></div>
+            <h2 class="text-base font-semibold">History</h2>
+          </div>
+          <div class="flex gap-2">
+            <input id="searchInput" type="text" placeholder="Search..."
+              class="bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-xl px-3 py-2 text-xs outline-none transition w-36 placeholder:text-zinc-600">
+            <button id="exportBtn" class="text-xs px-3 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl text-zinc-400 transition">
+              Export
             </button>
-            <button id="clearHistoryBtn"
-              class="text-sm px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-zinc-400">
-              Clear History
+            <button id="clearHistoryBtn" class="text-xs px-3 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl text-zinc-500 transition">
+              Clear
             </button>
           </div>
         </div>
-        
-        <div id="historyList" class="space-y-3 text-sm"></div>
+        <div id="historyList" class="space-y-3"></div>
       </div>
 
     </div>
 
     <!-- Calendar Modal -->
-    <div id="calendarModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div class="bg-zinc-900 border border-zinc-700 rounded-3xl w-full max-w-md p-6">
-        <div class="flex justify-between items-center mb-4">
-          <button id="prevMonth" class="text-xl px-3">←</button>
-          <h3 id="calendarTitle" class="text-xl font-semibold"></h3>
-          <button id="nextMonth" class="text-xl px-3">→</button>
+    <div id="calendarModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+      <div class="bg-zinc-900 border border-zinc-700/80 rounded-3xl w-full max-w-sm p-6">
+        <div class="flex justify-between items-center mb-5">
+          <button id="prevMonth" class="w-8 h-8 flex items-center justify-center hover:bg-zinc-800 rounded-xl transition text-zinc-400">←</button>
+          <h3 id="calendarTitle" class="text-sm font-semibold"></h3>
+          <button id="nextMonth" class="w-8 h-8 flex items-center justify-center hover:bg-zinc-800 rounded-xl transition text-zinc-400">→</button>
         </div>
-        <div id="calendarGrid" class="grid grid-cols-7 gap-1 text-center text-sm"></div>
-        
-        <div class="mt-6 border-t border-zinc-700 pt-4">
+        <div id="calendarGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+        <div class="mt-5 border-t border-zinc-800 pt-4">
           <div id="dayDetails" class="hidden">
             <div class="flex justify-between items-center mb-3">
-              <div id="selectedDate" class="font-semibold"></div>
-              <div id="dayTotal" class="font-mono text-emerald-400"></div>
+              <div id="selectedDate" class="text-sm font-medium"></div>
+              <div id="dayTotal" class="font-mono text-emerald-400 text-sm"></div>
             </div>
-            <div id="dayTransactions" class="space-y-2 max-h-64 overflow-auto"></div>
+            <div id="dayTransactions" class="space-y-2 max-h-48 overflow-auto"></div>
           </div>
         </div>
-
-        <button id="closeCalendar"
-          class="mt-6 w-full py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm">
+        <button id="closeCalendar" class="mt-5 w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm text-zinc-300 transition">
           Close
         </button>
       </div>
