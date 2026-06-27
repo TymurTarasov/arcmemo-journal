@@ -190,11 +190,23 @@ async function checkNetwork() {
   } catch (error) {}
 }
 
-// ==================== SEND ====================
+// ==================== SEND (ИСПРАВЛЕНО) ====================
 
 async function sendWithMemo() {
   if (!account || !walletClient) {
     alert('Please connect wallet first')
+    return
+  }
+
+  // Проверка сети перед отправкой транзакции
+  try {
+    const currentChain = await walletClient.getChainId()
+    if (currentChain !== ARC_TESTNET.id) {
+      alert('Please switch to Arc Testnet first!')
+      return
+    }
+  } catch (err) {
+    alert('Failed to check network. Please switch to Arc Testnet.')
     return
   }
 
@@ -226,12 +238,11 @@ async function sendWithMemo() {
     saveHistoryToStorage()
     await updateBalance()
 
-    // Красивое уведомление вместо alert
-    showToast(`Transaction sent! Hash: ${hash.slice(0, 10)}...${hash.slice(-6)}`)
+    showToast(`Transaction sent!`)
 
   } catch (error) {
-    console.error(error)
-    alert('Transaction failed.')
+    console.error('Transaction error:', error)
+    alert('Transaction failed. Make sure you are on Arc Testnet and have enough balance.')
   } finally {
     sendBtn.disabled = false
     sendBtn.textContent = 'Send with Memo'
@@ -298,15 +309,12 @@ function renderContacts() {
   })
 }
 
-// ==================== КРАСИВЫЙ ВЫБОР КОНТАКТА ====================
-
 function showContactSelectorModal() {
   if (contacts.length === 0) {
     alert('You have no contacts yet')
     return
   }
 
-  // Создаём модальное окно
   const modal = document.createElement('div')
   modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[60]'
 
@@ -336,7 +344,6 @@ function showContactSelectorModal() {
   modal.innerHTML = html
   document.body.appendChild(modal)
 
-  // Обработка клика по контакту
   modal.querySelectorAll('.contact-item').forEach(item => {
     item.onclick = () => {
       const index = parseInt(item.dataset.index)
@@ -345,14 +352,11 @@ function showContactSelectorModal() {
     }
   })
 
-  // Закрытие
   modal.querySelector('.close-modal').onclick = () => modal.remove()
-  modal.onclick = (e) => {
-    if (e.target === modal) modal.remove()
-  }
+  modal.onclick = (e) => { if (e.target === modal) modal.remove() }
 }
 
-// ==================== ПОИСК И ИСТОРИЯ ====================
+// ==================== SEARCH + HISTORY ====================
 
 function renderHistory(filteredHistory = null) {
   const list = filteredHistory || history
@@ -439,8 +443,6 @@ function getCategoryColor(category) {
   return colors[category] || 'bg-zinc-600'
 }
 
-// ==================== ПОИСК ====================
-
 searchInput.addEventListener('input', () => {
   const query = searchInput.value.toLowerCase().trim()
   if (!query) {
@@ -456,7 +458,7 @@ searchInput.addEventListener('input', () => {
   renderHistory(filtered)
 })
 
-// ==================== КАЛЕНДАРЬ ====================
+// ==================== CALENDAR ====================
 
 function showCalendar() {
   calendarModal.classList.remove('hidden')
@@ -544,7 +546,7 @@ function showDayInCalendar(dateStr, transactions) {
   })
 }
 
-// ==================== УВЕДОМЛЕНИЕ ВМЕСТО ALERT ====================
+// ==================== TOAST ====================
 
 function showToast(message) {
   const toast = document.createElement('div')
