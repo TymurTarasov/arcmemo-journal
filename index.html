@@ -10,7 +10,6 @@
   </head>
   <body class="bg-[#0a0a0f] text-white min-h-screen" style="font-family:'Inter',sans-serif">
 
-    <!-- Background glow -->
     <div class="fixed inset-0 pointer-events-none overflow-hidden">
       <div class="absolute top-[-20%] left-[30%] w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px]"></div>
       <div class="absolute bottom-[-10%] right-[20%] w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]"></div>
@@ -43,28 +42,23 @@
           <div class="w-1.5 h-5 bg-emerald-500 rounded-full"></div>
           <h2 class="text-base font-semibold">Send USDC</h2>
         </div>
-
         <div class="space-y-4">
-          <!-- Recipient -->
           <div>
             <div class="flex justify-between items-center mb-2">
               <label class="text-xs text-zinc-500 font-medium uppercase tracking-wider">Recipient</label>
               <button id="chooseContactBtn" class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 rounded-xl transition">
-                From contacts ↓
+                From contacts
               </button>
             </div>
             <input id="recipient" type="text" placeholder="0x..."
               class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-3 text-sm outline-none transition placeholder:text-zinc-600">
           </div>
-
           <div class="grid grid-cols-2 gap-4">
-            <!-- Amount -->
             <div>
               <label class="block text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2">Amount (USDC)</label>
               <input id="amount" type="number" value="1" step="0.01"
                 class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-3 text-sm outline-none transition">
             </div>
-            <!-- Category -->
             <div>
               <label class="block text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2">Category</label>
               <select id="category"
@@ -76,8 +70,6 @@
               </select>
             </div>
           </div>
-
-          <!-- Saved categories -->
           <div id="savedCategoriesBar" class="hidden">
             <label class="text-xs text-zinc-500 font-medium uppercase tracking-wider block mb-2">Your categories</label>
             <div id="savedCategoriesList" class="flex flex-wrap gap-2"></div>
@@ -89,24 +81,19 @@
               </button>
             </div>
           </div>
-
-          <!-- Memo -->
           <div>
             <label class="block text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2">Memo</label>
             <textarea id="memo" rows="2" placeholder="Add a note..."
               class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-3 text-sm outline-none transition resize-none placeholder:text-zinc-600"></textarea>
           </div>
         </div>
-
         <button id="sendBtn" class="mt-6 w-full bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 transition text-black font-semibold py-3.5 rounded-2xl text-sm">
           Send with Memo →
         </button>
       </div>
 
-      <!-- Two column: Contacts + Stats -->
+      <!-- Contacts + Stats -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-
-        <!-- Contacts -->
         <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-3xl p-6 backdrop-blur-sm">
           <div class="flex items-center gap-2 mb-5">
             <div class="w-1.5 h-5 bg-blue-500 rounded-full"></div>
@@ -123,14 +110,12 @@
           </div>
           <div id="contactsList" class="space-y-2 max-h-48 overflow-y-auto"></div>
         </div>
-
-        <!-- Quick stats -->
         <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-3xl p-6 backdrop-blur-sm">
           <div class="flex items-center gap-2 mb-5">
             <div class="w-1.5 h-5 bg-purple-500 rounded-full"></div>
             <h2 class="text-base font-semibold">Stats</h2>
           </div>
-          <div id="statsBlock" class="space-y-3">
+          <div class="space-y-3">
             <div class="flex justify-between items-center py-2 border-b border-zinc-800">
               <span class="text-xs text-zinc-500">Total sent</span>
               <span id="statTotal" class="text-sm font-mono text-emerald-400">—</span>
@@ -148,6 +133,87 @@
               <span id="statLast" class="text-xs font-mono text-zinc-400">—</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Deposit -->
+      <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-3xl p-6 mb-5 backdrop-blur-sm">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-1.5 h-5 bg-teal-500 rounded-full"></div>
+          <h2 class="text-base font-semibold">Deposit USDC</h2>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <div class="flex-1 w-full">
+            <p class="text-xs text-zinc-500 mb-2">Your wallet address — share it to receive USDC</p>
+            <div class="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800 rounded-2xl px-4 py-3">
+              <span id="depositAddress" class="font-mono text-xs text-zinc-400 flex-1 truncate">Connect wallet to see address</span>
+              <button id="copyAddressBtn" class="text-xs text-zinc-500 hover:text-white transition shrink-0">Copy</button>
+            </div>
+          </div>
+          <a href="https://faucet.circle.com/" target="_blank"
+            class="shrink-0 px-5 py-3 bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-400 text-sm font-medium rounded-2xl transition">
+            Get test USDC ↗
+          </a>
+        </div>
+      </div>
+
+      <!-- Scheduled Payments -->
+      <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-3xl p-6 mb-5 backdrop-blur-sm">
+        <div class="flex items-center justify-between mb-5">
+          <div class="flex items-center gap-2">
+            <div class="w-1.5 h-5 bg-violet-500 rounded-full"></div>
+            <h2 class="text-base font-semibold">Scheduled Payments</h2>
+          </div>
+          <button id="toggleScheduleForm" class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 rounded-xl transition">
+            + Schedule
+          </button>
+        </div>
+        <div id="scheduleForm" class="hidden mb-5 p-4 bg-zinc-800/40 border border-zinc-700/50 rounded-2xl space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-zinc-500 uppercase tracking-wider block mb-1.5">Recipient</label>
+              <input id="schedRecipient" type="text" placeholder="0x..."
+                class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-xl px-3 py-2.5 text-sm outline-none transition placeholder:text-zinc-600">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 uppercase tracking-wider block mb-1.5">Amount (USDC)</label>
+              <input id="schedAmount" type="number" value="1" step="0.01"
+                class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-xl px-3 py-2.5 text-sm outline-none transition">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-zinc-500 uppercase tracking-wider block mb-1.5">Date and Time</label>
+              <input id="schedDateTime" type="datetime-local"
+                class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-xl px-3 py-2.5 text-sm outline-none transition">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 uppercase tracking-wider block mb-1.5">Repeat</label>
+              <select id="schedRepeat"
+                class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-xl px-3 py-2.5 text-sm outline-none transition">
+                <option value="once">One time</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-zinc-500 uppercase tracking-wider block mb-1.5">Memo</label>
+            <input id="schedMemo" type="text" placeholder="e.g. Monthly rent, Weekly subscription..."
+              class="w-full bg-zinc-950/80 border border-zinc-800 focus:border-zinc-600 rounded-xl px-3 py-2.5 text-sm outline-none transition placeholder:text-zinc-600">
+          </div>
+          <div class="flex gap-2 pt-1">
+            <button id="saveScheduleBtn" class="flex-1 py-2.5 bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/30 text-violet-300 text-sm font-medium rounded-xl transition">
+              Save Schedule
+            </button>
+            <button id="cancelScheduleBtn" class="px-4 py-2.5 bg-zinc-700/50 hover:bg-zinc-700 text-zinc-400 text-sm rounded-xl transition">
+              Cancel
+            </button>
+          </div>
+        </div>
+        <div id="scheduledList" class="space-y-3">
+          <div class="text-center py-8 text-zinc-600 text-xs">No scheduled payments</div>
         </div>
       </div>
 
