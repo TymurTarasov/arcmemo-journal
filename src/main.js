@@ -190,7 +190,7 @@ async function checkNetwork() {
   } catch (error) {}
 }
 
-// ==================== SEND (ИСПРАВЛЕНО) ====================
+// ==================== SEND (УЛУЧШЕННАЯ ВЕРСИЯ) ====================
 
 async function sendWithMemo() {
   if (!account || !walletClient) {
@@ -198,15 +198,22 @@ async function sendWithMemo() {
     return
   }
 
-  // Проверка сети перед отправкой транзакции
+  // Принудительно переключаем на Arc Testnet перед отправкой
   try {
     const currentChain = await walletClient.getChainId()
+    
     if (currentChain !== ARC_TESTNET.id) {
-      alert('Please switch to Arc Testnet first!')
-      return
+      try {
+        await walletClient.switchChain({ id: ARC_TESTNET.id })
+        // Даём MetaMask время переключиться
+        await new Promise(resolve => setTimeout(resolve, 800))
+      } catch (switchError) {
+        alert('Please switch to Arc Testnet in MetaMask manually')
+        return
+      }
     }
   } catch (err) {
-    alert('Failed to check network. Please switch to Arc Testnet.')
+    alert('Failed to check/switch network')
     return
   }
 
@@ -242,7 +249,7 @@ async function sendWithMemo() {
 
   } catch (error) {
     console.error('Transaction error:', error)
-    alert('Transaction failed. Make sure you are on Arc Testnet and have enough balance.')
+    alert('Transaction failed. Check that you are on Arc Testnet and have enough USDC for gas + transfer.')
   } finally {
     sendBtn.disabled = false
     sendBtn.textContent = 'Send with Memo'
