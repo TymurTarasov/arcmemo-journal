@@ -593,3 +593,16 @@ function clearHistory() {
   localStorage.removeItem('arcmemo_history')
   renderHistory()
 }
+function addToHistory(recipient, amount, memo, category, txHash) {
+  history.unshift({
+    id: Date.now(),
+    recipient,
+    amount,
+    memo,
+    category,
+    txHash,
+    timestamp: new Date().toISOString()
+  })
+
+  renderHistory()
+}
