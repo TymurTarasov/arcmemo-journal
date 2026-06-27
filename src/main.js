@@ -35,12 +35,13 @@ const erc20Abi = [
 let walletClient = null
 let account = null
 let history = []
-let currentCalendarDate = new Date()
+let contacts = []
 
 const connectBtn = document.getElementById('connectBtn')
 const sendBtn = document.getElementById('sendBtn')
 const walletStatus = document.getElementById('walletStatus')
 const historyList = document.getElementById('historyList')
+const searchInput = document.getElementById('searchInput')
 const calendarBtn = document.getElementById('calendarBtn')
 const calendarModal = document.getElementById('calendarModal')
 const calendarGrid = document.getElementById('calendarGrid')
@@ -71,8 +72,12 @@ calendarBtn.addEventListener('click', showCalendar)
 document.getElementById('closeCalendar').addEventListener('click', () => calendarModal.classList.add('hidden'))
 document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1))
 document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1))
+searchInput.addEventListener('input', renderHistory)
+document.getElementById('addContactBtn').addEventListener('click', addContact)
+document.getElementById('chooseContactBtn').addEventListener('click', showContactSelector)
 
 loadHistoryFromStorage()
+loadContactsFromStorage()
 initWalletConnection()
 
 // ==================== WALLET ====================
@@ -232,7 +237,88 @@ async function sendWithMemo() {
   }
 }
 
-// ==================== HISTORY + CATEGORIES + DATE GROUPING ====================
+// ==================== CONTACTS ====================
+
+function loadContactsFromStorage() {
+  const saved = localStorage.getItem('arcmemo_contacts')
+  if (saved) contacts = JSON.parse(saved)
+  renderContacts()
+}
+
+function saveContactsToStorage() {
+  localStorage.setItem('arcmemo_contacts', JSON.stringify(contacts))
+}
+
+function addContact() {
+  const name = document.getElementById('contactName').value.trim()
+  const address = document.getElementById('contactAddress').value.trim()
+
+  if (!name || !address) {
+    alert('Please enter both name and address')
+    return
+  }
+
+  contacts.push({ id: Date.now(), name, address })
+  saveContactsToStorage()
+  renderContacts()
+
+  document.getElementById('contactName').value = ''
+  document.getElementById('contactAddress').value = ''
+}
+
+function deleteContact(id) {
+  contacts = contacts.filter(c => c.id !== id)
+  saveContactsToStorage()
+  renderContacts()
+}
+
+function renderContacts() {
+  const container = document.getElementById('contactsList')
+  container.innerHTML = ''
+
+  if (contacts.length === 0) {
+    container.innerHTML = `<div class="text-zinc-500 text-sm">No contacts yet</div>`
+    return
+  }
+
+  contacts.forEach(contact => {
+    const div = document.createElement('div')
+    div.className = 'flex justify-between items-center bg-zinc-800 rounded-2xl px-4 py-3'
+    div.innerHTML = `
+      <div>
+        <div class="font-medium">${contact.name}</div>
+        <div class="text-xs text-zinc-500 font-mono">${contact.address.slice(0, 10)}...${contact.address.slice(-6)}</div>
+      </div>
+      <button class="text-red-400 hover:text-red-500 text-sm px-3">Delete</button>
+    `
+
+    div.querySelector('button').onclick = () => deleteContact(contact.id)
+    container.appendChild(div)
+  })
+}
+
+function showContactSelector() {
+  if (contacts.length === 0) {
+    alert('You have no contacts yet. Add some first.')
+    return
+  }
+
+  const recipientInput = document.getElementById('recipient')
+  
+  let html = 'Choose contact:\n\n'
+  contacts.forEach((c, index) => {
+    html += `${index + 1}. ${c.name} - ${c.address}\n`
+  })
+
+  const choice = prompt(html + '\nEnter number:')
+  const index = parseInt(choice) - 1
+
+  if (contacts[index]) {
+    recipientInput.value = contacts[index].address
+  }
+}
+
+// ==================== SEARCH + HISTORY ====================
 
 function addToHistory(recipient, amount, memo, category, txHash) {
   const tx = {
@@ -247,60 +333,20 @@ function addToHistory(recipient, amount, memo, category, txHash) {
   renderHistory()
 }
 
-function groupTransactionsByDate(transactions) {
-  const groups = {}
-
-  transactions.forEach(tx => {
-    const dateKey = new Date(tx.timestamp).toISOString().split('T')[0]
-    if (!groups[dateKey]) {
-      groups[dateKey] = { date: dateKey, total: 0, transactions: [] }
-    }
-    groups[dateKey].total += parseFloat(tx.amount)
-    groups[dateKey].transactions.push(tx)
-  })
-
-  return Object.values(groups).sort((a, b) => b.date.localeCompare(a.date))
-}
-
-function formatDate(dateStr) {
-  const date = new Date(dateStr)
-  const today = new Date().toISOString().split('T')[0]
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
-
-  if (dateStr === today) return 'Today'
-  if (dateStr === yesterday) return 'Yesterday'
-
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric',
-    year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-  })
-}
-
-function getCategoryColor(category) {
-  const colors = {
-    'Payment': 'bg-blue-600',
-    'Gift': 'bg-pink-600',
-    'Work': 'bg-purple-600',
-    'Test': 'bg-yellow-600',
-    'Other': 'bg-zinc-600'
-  }
-  return colors[category] || 'bg-zinc-600'
-}
-
-function renderHistory() {
+function renderHistory(filteredHistory = null) {
+  const list = filteredHistory || history
   historyList.innerHTML = ''
 
-  if (history.length === 0) {
+  if (list.length === 0) {
     historyList.innerHTML = `
       <div class="text-zinc-500 text-center py-8 border border-dashed border-zinc-800 rounded-3xl">
-        Your payment history will appear here
+        No transactions found
       </div>
     `
     return
   }
 
-  const grouped = groupTransactionsByDate(history)
+  const grouped = groupTransactionsByDate(list)
 
   grouped.forEach(group => {
     const groupDiv = document.createElement('div')
@@ -344,11 +390,56 @@ function renderHistory() {
   })
 }
 
+function groupTransactionsByDate(transactions) {
+  const groups = {}
+  transactions.forEach(tx => {
+    const dateKey = new Date(tx.timestamp).toISOString().split('T')[0]
+    if (!groups[dateKey]) groups[dateKey] = { date: dateKey, total: 0, transactions: [] }
+    groups[dateKey].total += parseFloat(tx.amount)
+    groups[dateKey].transactions.push(tx)
+  })
+  return Object.values(groups).sort((a, b) => b.date.localeCompare(a.date))
+}
+
+function formatDate(dateStr) {
+  const date = new Date(dateStr)
+  const today = new Date().toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  if (dateStr === today) return 'Today'
+  if (dateStr === yesterday) return 'Yesterday'
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function getCategoryColor(category) {
+  const colors = {
+    'Payment': 'bg-blue-600', 'Gift': 'bg-pink-600', 'Work': 'bg-purple-600',
+    'Test': 'bg-yellow-600', 'Other': 'bg-zinc-600'
+  }
+  return colors[category] || 'bg-zinc-600'
+}
+
+// ==================== SEARCH ====================
+
+searchInput.addEventListener('input', () => {
+  const query = searchInput.value.toLowerCase().trim()
+  if (!query) {
+    renderHistory()
+    return
+  }
+
+  const filtered = history.filter(tx =>
+    tx.recipient.toLowerCase().includes(query) ||
+    tx.memo.toLowerCase().includes(query) ||
+    tx.category.toLowerCase().includes(query)
+  )
+  renderHistory(filtered)
+})
+
 // ==================== CALENDAR ====================
 
 function showCalendar() {
   calendarModal.classList.remove('hidden')
-  renderCalendar(currentCalendarDate)
+  renderCalendar(new Date())
 }
 
 function changeMonth(delta) {
@@ -356,19 +447,19 @@ function changeMonth(delta) {
   renderCalendar(currentCalendarDate)
 }
 
+let currentCalendarDate = new Date()
+
 function renderCalendar(date) {
   calendarGrid.innerHTML = ''
   dayDetails.classList.add('hidden')
 
   const year = date.getFullYear()
   const month = date.getMonth()
-
   calendarTitle.textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
   const firstDay = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
-  // Дни недели
   const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
   weekdays.forEach(day => {
     const el = document.createElement('div')
@@ -377,29 +468,23 @@ function renderCalendar(date) {
     calendarGrid.appendChild(el)
   })
 
-  // Пустые дни в начале
   for (let i = 0; i < firstDay; i++) {
-    const empty = document.createElement('div')
-    calendarGrid.appendChild(empty)
+    calendarGrid.appendChild(document.createElement('div'))
   }
 
-  // Дни месяца
   for (let day = 1; day <= daysInMonth; day++) {
     const dayEl = document.createElement('div')
     dayEl.className = 'py-2 text-center rounded-xl cursor-pointer hover:bg-zinc-800 text-sm'
 
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    const dayTransactions = history.filter(tx => 
-      new Date(tx.timestamp).toISOString().split('T')[0] === dateStr
-    )
+    const dayTxs = history.filter(tx => new Date(tx.timestamp).toISOString().split('T')[0] === dateStr)
 
-    if (dayTransactions.length > 0) {
+    if (dayTxs.length > 0) {
       dayEl.classList.add('bg-emerald-900/30', 'font-medium', 'text-emerald-400')
     }
 
     dayEl.textContent = day
-    dayEl.onclick = () => showDayInCalendar(dateStr, dayTransactions)
-
+    dayEl.onclick = () => showDayInCalendar(dateStr, dayTxs)
     calendarGrid.appendChild(dayEl)
   }
 }
@@ -413,18 +498,14 @@ function showDayInCalendar(dateStr, transactions) {
   const total = transactions.reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
   dayTotalEl.textContent = `${total.toFixed(2)} USDC`
 
-  dayTransactionsEl.innerHTML = ''
-
-  if (transactions.length === 0) {
-    dayTransactionsEl.innerHTML = `<div class="text-zinc-500 text-sm">No transactions on this day</div>`
-    return
-  }
+  dayTransactionsEl.innerHTML = transactions.length === 0 
+    ? `<div class="text-zinc-500 text-sm">No transactions</div>` 
+    : ''
 
   transactions.forEach(tx => {
     const div = document.createElement('div')
     div.className = 'bg-zinc-800 rounded-xl p-3 text-sm'
     const categoryColor = getCategoryColor(tx.category)
-    
     div.innerHTML = `
       <div class="flex justify-between">
         <div>
@@ -447,9 +528,7 @@ function exportToCSV() {
     return
   }
 
-  const headers = ['Date', 'Amount', 'Recipient', 'Category', 'Memo', 'Tx Hash']
-  let csv = headers.join(',') + '\n'
-
+  let csv = 'Date,Amount,Recipient,Category,Memo,Tx Hash\n'
   history.forEach(tx => {
     const date = new Date(tx.timestamp).toLocaleDateString()
     csv += `"${date}","${tx.amount}","${tx.recipient}","${tx.category}","${tx.memo}","${tx.txHash}"\n`
@@ -463,7 +542,7 @@ function exportToCSV() {
   a.click()
 }
 
-// ==================== HISTORY STORAGE ====================
+// ==================== STORAGE ====================
 
 function saveHistoryToStorage() {
   localStorage.setItem('arcmemo_history', JSON.stringify(history))
