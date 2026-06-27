@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ArcMemoJournal • Your USDC Payment Journal on Arc</title>
+  <link rel="stylesheet" href="/src/style.css">
   </head>
   <body class="bg-zinc-950 text-white">
     <div class="max-w-4xl mx-auto px-6 py-10">
@@ -27,7 +28,10 @@
       </div>
 
       <!-- Wallet Status -->
-      <div id="walletStatus" class="mb-2 text-sm text-zinc-400"></div>
+    <div class="flex items-center gap-4 mb-6">
+  <div id="walletStatus" class="text-sm text-zinc-400"></div>
+  <div id="balanceDisplay" class="text-sm font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl"></div>
+</div>
 
       <!-- Send Form -->
       <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 mb-10">
@@ -61,13 +65,19 @@
 
         <div class="mt-4">
           <label class="block text-sm text-zinc-400 mb-2">Category</label>
-          <select id="category" class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
-            <option value="Payment">Payment</option>
-            <option value="Gift">Gift</option>
-            <option value="Work">Work</option>
-            <option value="Test">Test</option>
-            <option value="Other" selected>Other</option>
-          </select>
+          <div class="flex gap-2">
+<div class="flex gap-2">
+  <select id="category" class="flex-1 bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
+    <option value="Payment">Payment</option>
+    <option value="Gift">Gift</option>
+    <option value="Work">Work</option>
+    <option value="Other" selected>Other</option>
+    <option value="custom">✏️ Custom category...</option>
+  </select>
+  <input id="customCategory" type="text" placeholder="Category name..."
+    class="hidden flex-1 bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
+</div>
+<div id="savedCategories" class="flex flex-wrap gap-2 mt-3"></div>
         </div>
 
         <button id="sendBtn"
