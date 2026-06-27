@@ -10,28 +10,6 @@ const ARC_TESTNET = {
   },
 }
 
-const USDC_ADDRESS = '0x3600000000000000000000000000000000000000'
-
-const erc20Abi = [
-  {
-    name: 'transfer',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'to', type: 'address' },
-      { name: 'amount', type: 'uint256' }
-    ],
-    outputs: [{ name: '', type: 'bool' }]
-  },
-  {
-    name: 'balanceOf',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'account', type: 'address' }],
-    outputs: [{ name: '', type: 'uint256' }]
-  }
-]
-
 let walletClient = null
 let account = null
 let history = []
@@ -145,7 +123,15 @@ async function updateBalance() {
   try {
     const balance = await publicClient.readContract({
       address: USDC_ADDRESS,
-      abi: erc20Abi,
+      abi: [
+        {
+          name: 'balanceOf',
+          type: 'function',
+          stateMutability: 'view',
+          inputs: [{ name: 'account', type: 'address' }],
+          outputs: [{ name: '', type: 'uint256' }]
+        }
+      ],
       functionName: 'balanceOf',
       args: [account]
     })
@@ -190,7 +176,7 @@ async function checkNetwork() {
   } catch (error) {}
 }
 
-// ==================== SEND (УЛУЧШЕННАЯ ВЕРСИЯ) ====================
+// ==================== SEND (НАДЁЖНЫЙ СПОСОБ) ====================
 
 async function sendWithMemo() {
   if (!account || !walletClient) {
@@ -198,22 +184,15 @@ async function sendWithMemo() {
     return
   }
 
-  // Принудительно переключаем на Arc Testnet перед отправкой
+  // Проверка и переключение сети
   try {
     const currentChain = await walletClient.getChainId()
-    
     if (currentChain !== ARC_TESTNET.id) {
-      try {
-        await walletClient.switchChain({ id: ARC_TESTNET.id })
-        // Даём MetaMask время переключиться
-        await new Promise(resolve => setTimeout(resolve, 800))
-      } catch (switchError) {
-        alert('Please switch to Arc Testnet in MetaMask manually')
-        return
-      }
+      await walletClient.switchChain({ id: ARC_TESTNET.id })
+      await new Promise(resolve => setTimeout(resolve, 600))
     }
   } catch (err) {
-    alert('Failed to check/switch network')
+    alert('Please switch to Arc Testnet in MetaMask')
     return
   }
 
@@ -231,14 +210,13 @@ async function sendWithMemo() {
     sendBtn.disabled = true
     sendBtn.textContent = 'Sending...'
 
-    const amountInWei = parseUnits(amountStr, 6)
+    // Используем нативную отправку (USDC на Arc — нативный токен)
+    const amountInWei = parseUnits(amountStr, 18)
 
-    const hash = await walletClient.writeContract({
+    const hash = await walletClient.sendTransaction({
       account,
-      address: USDC_ADDRESS,
-      abi: erc20Abi,
-      functionName: 'transfer',
-      args: [recipient, amountInWei]
+      to: recipient,
+      value: amountInWei,
     })
 
     addToHistory(recipient, amountStr, memoText, category, hash)
@@ -249,7 +227,7 @@ async function sendWithMemo() {
 
   } catch (error) {
     console.error('Transaction error:', error)
-    alert('Transaction failed. Check that you are on Arc Testnet and have enough USDC for gas + transfer.')
+    alert('Transaction failed. Please check network and balance.')
   } finally {
     sendBtn.disabled = false
     sendBtn.textContent = 'Send with Memo'
