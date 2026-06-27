@@ -74,7 +74,7 @@ document.getElementById('prevMonth').addEventListener('click', () => changeMonth
 document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1))
 searchInput.addEventListener('input', renderHistory)
 document.getElementById('addContactBtn').addEventListener('click', addContact)
-document.getElementById('chooseContactBtn').addEventListener('click', showContactSelector)
+document.getElementById('chooseContactBtn').addEventListener('click', showContactSelectorModal)
 
 loadHistoryFromStorage()
 loadContactsFromStorage()
@@ -226,7 +226,8 @@ async function sendWithMemo() {
     saveHistoryToStorage()
     await updateBalance()
 
-    alert(`Transaction sent!\nHash: ${hash}`)
+    // Красивое уведомление вместо alert
+    showToast(`Transaction sent! Hash: ${hash.slice(0, 10)}...${hash.slice(-6)}`)
 
   } catch (error) {
     console.error(error)
@@ -297,41 +298,61 @@ function renderContacts() {
   })
 }
 
-function showContactSelector() {
+// ==================== КРАСИВЫЙ ВЫБОР КОНТАКТА ====================
+
+function showContactSelectorModal() {
   if (contacts.length === 0) {
-    alert('You have no contacts yet. Add some first.')
+    alert('You have no contacts yet')
     return
   }
 
-  const recipientInput = document.getElementById('recipient')
-  
-  let html = 'Choose contact:\n\n'
-  contacts.forEach((c, index) => {
-    html += `${index + 1}. ${c.name} - ${c.address}\n`
+  // Создаём модальное окно
+  const modal = document.createElement('div')
+  modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[60]'
+
+  let html = `
+    <div class="bg-zinc-900 border border-zinc-700 rounded-3xl w-full max-w-md p-6">
+      <h3 class="text-xl font-semibold mb-4">Choose contact</h3>
+      <div class="space-y-2 max-h-80 overflow-auto">
+  `
+
+  contacts.forEach((contact, index) => {
+    html += `
+      <div class="contact-item flex justify-between items-center bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-4 py-3 cursor-pointer" data-index="${index}">
+        <div>
+          <div class="font-medium">${contact.name}</div>
+          <div class="text-xs text-zinc-500 font-mono">${contact.address}</div>
+        </div>
+      </div>
+    `
   })
 
-  const choice = prompt(html + '\nEnter number:')
-  const index = parseInt(choice) - 1
+  html += `
+      </div>
+      <button class="mt-6 w-full py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm close-modal">Cancel</button>
+    </div>
+  `
 
-  if (contacts[index]) {
-    recipientInput.value = contacts[index].address
+  modal.innerHTML = html
+  document.body.appendChild(modal)
+
+  // Обработка клика по контакту
+  modal.querySelectorAll('.contact-item').forEach(item => {
+    item.onclick = () => {
+      const index = parseInt(item.dataset.index)
+      document.getElementById('recipient').value = contacts[index].address
+      modal.remove()
+    }
+  })
+
+  // Закрытие
+  modal.querySelector('.close-modal').onclick = () => modal.remove()
+  modal.onclick = (e) => {
+    if (e.target === modal) modal.remove()
   }
 }
 
-// ==================== SEARCH + HISTORY ====================
-
-function addToHistory(recipient, amount, memo, category, txHash) {
-  const tx = {
-    recipient,
-    amount,
-    memo: memo || '',
-    category: category || 'Other',
-    txHash,
-    timestamp: new Date().toISOString()
-  }
-  history.unshift(tx)
-  renderHistory()
-}
+// ==================== ПОИСК И ИСТОРИЯ ====================
 
 function renderHistory(filteredHistory = null) {
   const list = filteredHistory || history
@@ -418,7 +439,7 @@ function getCategoryColor(category) {
   return colors[category] || 'bg-zinc-600'
 }
 
-// ==================== SEARCH ====================
+// ==================== ПОИСК ====================
 
 searchInput.addEventListener('input', () => {
   const query = searchInput.value.toLowerCase().trim()
@@ -435,7 +456,7 @@ searchInput.addEventListener('input', () => {
   renderHistory(filtered)
 })
 
-// ==================== CALENDAR ====================
+// ==================== КАЛЕНДАРЬ ====================
 
 function showCalendar() {
   calendarModal.classList.remove('hidden')
@@ -498,9 +519,12 @@ function showDayInCalendar(dateStr, transactions) {
   const total = transactions.reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
   dayTotalEl.textContent = `${total.toFixed(2)} USDC`
 
-  dayTransactionsEl.innerHTML = transactions.length === 0 
-    ? `<div class="text-zinc-500 text-sm">No transactions</div>` 
-    : ''
+  dayTransactionsEl.innerHTML = ''
+
+  if (transactions.length === 0) {
+    dayTransactionsEl.innerHTML = `<div class="text-zinc-500 text-sm">No transactions on this day</div>`
+    return
+  }
 
   transactions.forEach(tx => {
     const div = document.createElement('div')
@@ -518,6 +542,26 @@ function showDayInCalendar(dateStr, transactions) {
     `
     dayTransactionsEl.appendChild(div)
   })
+}
+
+// ==================== УВЕДОМЛЕНИЕ ВМЕСТО ALERT ====================
+
+function showToast(message) {
+  const toast = document.createElement('div')
+  toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 px-6 py-3 rounded-2xl shadow-xl z-[70]'
+  toast.innerHTML = `
+    <div class="flex items-center gap-3">
+      <div class="text-emerald-400">✓</div>
+      <div class="text-sm">${message}</div>
+    </div>
+  `
+  document.body.appendChild(toast)
+
+  setTimeout(() => {
+    toast.style.transition = 'all 0.3s ease'
+    toast.style.opacity = '0'
+    setTimeout(() => toast.remove(), 300)
+  }, 3500)
 }
 
 // ==================== EXPORT CSV ====================
