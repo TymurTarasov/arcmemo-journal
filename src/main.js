@@ -17,8 +17,8 @@ const ERC20_ABI = [
 ];
 
 const DEFAULT_COLORS = { Payment:"#10b981", Gift:"#f59e0b", Work:"#3b82f6", Other:"#6b7280" };
-const TYPE_ICONS = { note:"📝", event:"🎯", holiday:"🎉", payment:"💸" };
-const TYPE_COLORS = { note:"#60a5fa", event:"#fb923c", holiday:"#f472b6", payment:"#a78bfa" };
+const TYPE_ICONS = { note:"📝", event:"🎯", holiday:"🎉", custom:"✏️", payment:"💸" };
+const TYPE_COLORS = { note:"#60a5fa", event:"#fb923c", holiday:"#f472b6", custom:"#a78bfa", payment:"#34d399" };
 
 const $ = id => document.getElementById(id);
 
@@ -26,6 +26,23 @@ let account = null;
 let allHistory = [], allContacts = [], allCategories = [], allCalendarEvents = [], allScheduled = [];
 let currentCalDate = new Date();
 let selectedMiniDay = null, selectedModalDay = null;
+
+// ─── THEME ───────────────────────────────────────────────────────────
+const themeToggle = $("themeToggle");
+let isDark = localStorage.getItem("mj_theme") !== "light";
+
+function applyTheme() {
+  document.documentElement.classList.toggle("dark", isDark);
+  document.documentElement.classList.toggle("light", !isDark);
+  themeToggle.textContent = isDark ? "🌙" : "☀️";
+}
+applyTheme();
+
+themeToggle.onclick = () => {
+  isDark = !isDark;
+  localStorage.setItem("mj_theme", isDark ? "dark" : "light");
+  applyTheme();
+};
 
 // ─── TOAST ───────────────────────────────────────────────────────────
 function showToast(msg, type = "success") {
@@ -51,7 +68,7 @@ function createContactModal() {
       <button id="closeContactPickModal" class="text-zinc-500 hover:text-white text-lg">✕</button>
     </div>
     <input id="contactSearchModal" type="text" placeholder="Search..."
-      class="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-sm outline-none mb-3 placeholder:text-zinc-600">
+      class="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-2.5 text-sm outline-none mb-3 placeholder:text-zinc-600">
     <div id="contactModalList" class="space-y-2 max-h-64 overflow-y-auto"></div>
   </div>`;
   document.body.appendChild(m);
@@ -67,7 +84,8 @@ function renderContactModalList(q = "") {
   list.innerHTML = f.map(c =>
     '<div onclick="pickContact(\'' + c.address + '\',\'' + c.name + '\')" class="flex items-center gap-3 p-3 bg-zinc-800/60 hover:bg-zinc-700/60 rounded-2xl cursor-pointer transition border border-transparent hover:border-zinc-600">' +
     '<div class="w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-semibold text-xs">' + c.name.slice(0,2).toUpperCase() + '</div>' +
-    '<div class="flex-1 min-w-0"><div class="text-sm font-medium">' + c.name + '</div><div class="font-mono text-xs text-zinc-500 truncate">' + c.address + '</div></div>' +
+    '<div class="flex-1 min-w-0"><div class="text-sm font-medium">' + c.name + '</div>' +
+    '<div class="font-mono text-xs text-zinc-500 truncate">' + c.address + '</div></div>' +
     '<span class="text-emerald-500 text-xs">→</span></div>'
   ).join("");
 }
@@ -84,12 +102,6 @@ function getCategoryColor(name) {
   return c ? (c.color || "#6b7280") : "#6b7280";
 }
 
-function updateColorDot() {
-  $("categoryColorDot").style.background = getCategoryColor($("category").value);
-}
-
-$("category").addEventListener("change", updateColorDot);
-
 async function loadCategories() {
   if (!account) return;
   const { data } = await supabase.from("categories").select("*").eq("wallet", account.toLowerCase()).order("created_at", { ascending: true });
@@ -97,7 +109,6 @@ async function loadCategories() {
   rebuildCategorySelect();
   renderSavedCategories();
   $("savedCategoriesBar").classList.remove("hidden");
-  updateColorDot();
 }
 
 function rebuildCategorySelect() {
@@ -113,18 +124,18 @@ function rebuildCategorySelect() {
 
 function renderSavedCategories() {
   const el = $("savedCategoriesList");
-  if (!allCategories.length) { el.innerHTML = '<span class="text-xs text-zinc-600">No custom categories yet</span>'; return; }
+  if (!allCategories.length) { el.innerHTML = '<span class="text-xs t3">No custom categories yet</span>'; return; }
   el.innerHTML = allCategories.map(c =>
-    '<div class="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 border border-zinc-700/60 group" style="background:' + (c.color||"#6366f1") + '22">' +
+    '<div class="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 border group cursor-pointer" style="background:' + (c.color||"#6366f1") + '22;border-color:' + (c.color||"#6366f1") + '44">' +
     '<span class="w-2 h-2 rounded-full shrink-0" style="background:' + (c.color||"#6366f1") + '"></span>' +
     '<button onclick="selectCategory(\'' + c.name + '\')" class="text-xs text-zinc-300 hover:text-white transition">' + c.name + '</button>' +
-    '<button onclick="renameCategory(' + c.id + ',\'' + c.name + '\')" class="text-zinc-600 hover:text-blue-400 text-xs ml-1 transition">✎</button>' +
-    '<button onclick="deleteCategoryById(' + c.id + ')" class="text-zinc-600 hover:text-red-400 text-xs transition">✕</button>' +
+    '<button onclick="renameCategory(' + c.id + ',\'' + c.name + '\')" class="text-zinc-600 hover:text-blue-400 text-xs ml-1 transition" title="Rename">✎</button>' +
+    '<button onclick="deleteCategoryById(' + c.id + ')" class="text-zinc-600 hover:text-red-400 text-xs transition" title="Delete">✕</button>' +
     '</div>'
   ).join("");
 }
 
-window.selectCategory = name => { $("category").value = name; updateColorDot(); showToast("Category: " + name, "info"); };
+window.selectCategory = name => { $("category").value = name; showToast("Category: " + name, "info"); };
 window.renameCategory = async (id, oldName) => {
   const n = prompt('Rename "' + oldName + '" to:', oldName);
   if (!n || n.trim() === oldName) return;
@@ -138,16 +149,14 @@ window.deleteCategoryById = async id => {
 };
 
 $("addCategoryBtn").onclick = async () => {
-  const name = $("newCategoryInput").value.trim();
-  const color = $("newCategoryColor").value;
+  const name = $("newCategoryInput").value.trim(), color = $("newCategoryColor").value;
   if (!name) { showToast("Enter a name", "error"); return; }
   if (!account) { showToast("Connect wallet first", "error"); return; }
   if (allCategories.find(c => c.name.toLowerCase() === name.toLowerCase())) { showToast("Already exists", "info"); return; }
   const { error } = await supabase.from("categories").insert({ wallet: account.toLowerCase(), name, color });
   if (error) { showToast("Error: " + error.message, "error"); return; }
   $("newCategoryInput").value = "";
-  await loadCategories();
-  showToast("Category saved: " + name, "success");
+  await loadCategories(); showToast("Category saved: " + name, "success");
 };
 $("newCategoryInput").addEventListener("keydown", e => { if (e.key === "Enter") $("addCategoryBtn").click(); });
 
@@ -155,7 +164,6 @@ $("newCategoryInput").addEventListener("keydown", e => { if (e.key === "Enter") 
 window.addEventListener("load", async () => {
   createContactModal();
   rebuildCategorySelect();
-  updateColorDot();
   renderCalendar();
   if (!window.ethereum) return;
   try {
@@ -200,7 +208,7 @@ function disconnectWallet() {
     } catch (err) { showToast("Error: " + err.message, "error"); }
   };
   renderHistory([]); renderContacts([]);
-  $("scheduledList").innerHTML = '<div class="text-center py-6 text-zinc-600 text-xs">No scheduled payments</div>';
+  $("scheduledList").innerHTML = '<div class="text-center py-6 t3 text-xs">No scheduled payments</div>';
   showToast("Wallet disconnected", "info");
 }
 
@@ -257,7 +265,7 @@ function getContactName(addr) {
 
 function renderHistory(items) {
   const el = $("historyList");
-  if (!items.length) { el.innerHTML = '<div class="text-center py-8 text-zinc-600 text-sm">No transactions yet</div>'; return; }
+  if (!items.length) { el.innerHTML = '<div class="text-center py-8 t3 text-sm">No transactions yet</div>'; return; }
   el.innerHTML = items.map(tx => {
     const name = getContactName(tx.recipient);
     const color = getCategoryColor(tx.category);
@@ -267,14 +275,14 @@ function renderHistory(items) {
       '<div class="flex items-center gap-3 px-3 py-2 bg-zinc-800/40 hover:bg-zinc-800/70 rounded-xl border border-zinc-800/60 transition text-xs">' +
       '<div class="w-7 h-7 rounded-full bg-zinc-700/60 flex items-center justify-center font-semibold text-zinc-400 shrink-0 text-xs">' +
       (name ? name.slice(0,2).toUpperCase() : tx.recipient.slice(2,4).toUpperCase()) + '</div>' +
-      '<div class="flex-1 min-w-0">' +
-      '<span class="font-medium text-zinc-200">' + (name || short) + '</span>' +
-      (tx.memo ? ' <span class="text-zinc-500">· ' + tx.memo + '</span>' : '') +
+      '<div class="flex-1 min-w-0 truncate">' +
+      '<span class="font-medium">' + (name || short) + '</span>' +
+      (tx.memo ? '<span class="t3"> · ' + tx.memo + '</span>' : '') +
       '</div>' +
       '<span class="px-2 py-0.5 rounded-lg text-xs font-medium shrink-0" style="background:' + color + '22;color:' + color + '">' + tx.category + '</span>' +
       '<span class="text-emerald-400 font-semibold shrink-0">' + tx.amount + ' USDC</span>' +
-      '<span class="text-zinc-600 shrink-0">' + date + '</span>' +
-      (tx.txhash ? '<a href="https://testnet.arcscan.app/tx/' + tx.txhash + '" target="_blank" class="text-zinc-600 hover:text-blue-400 transition shrink-0">↗</a>' : '') +
+      '<span class="t3 shrink-0">' + date + '</span>' +
+      (tx.txhash ? '<a href="https://testnet.arcscan.app/tx/' + tx.txhash + '" target="_blank" class="t3 hover:text-blue-400 transition shrink-0">↗</a>' : '') +
       '</div>'
     );
   }).join("");
@@ -294,7 +302,7 @@ $("exportBtn").onclick = () => {
     ...allHistory.map(tx=>[new Date(tx.created_at).toLocaleString("en"),getContactName(tx.recipient)||"",tx.recipient,tx.amount,tx.memo||"",tx.category,tx.txhash||""])];
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([rows.map(r=>r.join(",")).join("\n")],{type:"text/csv"}));
-  a.download="arcmemo.csv"; a.click(); showToast("CSV downloaded ✓","success");
+  a.download="memoji.csv"; a.click(); showToast("CSV downloaded ✓","success");
 };
 
 $("clearHistoryBtn").onclick = async () => {
@@ -322,30 +330,22 @@ async function loadContacts() {
 
 function renderContacts(contacts) {
   const el=$("contactsList");
-  if (!contacts.length) { el.innerHTML='<p class="text-zinc-600 text-xs py-1">No contacts yet</p>'; return; }
+  if (!contacts.length) { el.innerHTML='<p class="t3 text-xs py-1">No contacts yet</p>'; return; }
   el.innerHTML=contacts.map(c=>
     '<div class="flex items-center justify-between py-1.5 px-1 group">' +
     '<div class="flex items-center gap-2">' +
     '<div class="w-7 h-7 rounded-full bg-zinc-700/60 text-zinc-400 flex items-center justify-center font-semibold text-xs">' + c.name.slice(0,2).toUpperCase() + '</div>' +
-    '<div><div class="text-sm font-medium leading-tight">' + c.name + '</div>' +
-    '<div class="font-mono text-xs text-zinc-600">' + c.address.slice(0,6)+"..."+c.address.slice(-4) + '</div></div></div>' +
+    '<div><div class="text-sm font-medium">' + c.name + '</div>' +
+    '<div class="font-mono text-xs t3">' + c.address.slice(0,6)+"..."+c.address.slice(-4) + '</div></div></div>' +
     '<div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">' +
     '<button onclick="useContact(\'' + c.address + '\',\'' + c.name + '\')" class="text-xs px-2 py-1 bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 rounded-lg transition">Send</button>' +
-    '<button onclick="deleteContact(' + c.id + ')" class="text-xs px-2 py-1 bg-zinc-700/50 hover:bg-red-500/20 text-zinc-500 hover:text-red-400 rounded-lg transition">✕</button>' +
+    '<button onclick="deleteContact(' + c.id + ')" class="text-xs px-2 py-1 bg-zinc-700/50 hover:bg-red-500/20 t3 hover:text-red-400 rounded-lg transition">✕</button>' +
     '</div></div>'
   ).join("");
 }
 
-window.useContact = (address, name) => {
-  $("recipient").value = address;
-  showToast("Selected: "+name,"info");
-  window.scrollTo({top:0,behavior:"smooth"});
-};
-window.deleteContact = async id => {
-  await supabase.from("contacts").delete().eq("id",id);
-  await loadContacts(); showToast("Contact deleted","info");
-};
-
+window.useContact = (address, name) => { $("recipient").value=address; showToast("Selected: "+name,"info"); window.scrollTo({top:0,behavior:"smooth"}); };
+window.deleteContact = async id => { await supabase.from("contacts").delete().eq("id",id); await loadContacts(); showToast("Deleted","info"); };
 $("chooseContactBtn").onclick = () => {
   if (!account) { showToast("Connect wallet first!","error"); return; }
   if (!allContacts.length) { showToast("No contacts yet","info"); return; }
@@ -377,20 +377,20 @@ async function loadScheduled() {
 
 function renderScheduled(items) {
   const el=$("scheduledList");
-  if(!items.length){el.innerHTML='<div class="text-center py-6 text-zinc-600 text-xs">No scheduled payments</div>';return;}
+  if(!items.length){el.innerHTML='<div class="text-center py-6 t3 text-xs">No scheduled payments</div>';return;}
   const labels={once:"Once",daily:"Daily",weekly:"Weekly",monthly:"Monthly"};
   el.innerHTML=items.map(p=>{
     const dt=new Date(p.scheduled_at),isDue=dt<=new Date(),name=getContactName(p.recipient);
-    return '<div class="flex items-center gap-3 px-3 py-2.5 rounded-xl border text-xs '+( isDue?'border-violet-500/40 bg-violet-500/5':'border-zinc-700/50 bg-zinc-800/30')+'">' +
-    '<div class="text-base shrink-0">' + (isDue?'⚡':'⏰') + '</div>' +
-    '<div class="flex-1 min-w-0">' +
-    '<span class="font-medium text-zinc-200">'+(name||p.recipient.slice(0,8)+"...")+' </span>' +
-    '<span class="text-zinc-500">'+dt.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+dt.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})+'</span>' +
-    (p.memo?'<span class="text-zinc-600"> · '+p.memo+'</span>':'')+'</div>'+
+    return '<div class="flex items-center gap-3 px-3 py-2.5 rounded-xl border text-xs '+(isDue?'border-violet-500/40 bg-violet-500/5':'border-zinc-700/50 bg-zinc-800/30')+'">' +
+    '<div class="text-base shrink-0">'+(isDue?'⚡':'⏰')+'</div>' +
+    '<div class="flex-1 min-w-0 truncate">' +
+    '<span class="font-medium">'+(name||p.recipient.slice(0,8)+"...")+' </span>' +
+    '<span class="t3">'+dt.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+dt.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})+'</span>' +
+    (p.memo?'<span class="t3"> · '+p.memo+'</span>':'')+'</div>'+
     '<span class="text-violet-400 font-semibold shrink-0">'+p.amount+' USDC</span>'+
-    '<span class="text-zinc-600 shrink-0">'+labels[p.repeat_type]+'</span>'+
-    (isDue?'<button onclick="executeScheduled('+p.id+',\''+p.recipient+'\','+p.amount+',\''+(p.memo||"")+'\',\''+p.category+'\',\''+p.repeat_type+'\')" class="text-xs px-2.5 py-1 bg-violet-500/20 hover:bg-violet-500/40 border border-violet-500/30 text-violet-300 rounded-lg transition shrink-0">Send</button>':'') +
-    '<button onclick="deleteScheduled('+p.id+')" class="text-zinc-600 hover:text-red-400 text-xs shrink-0 transition">✕</button></div>';
+    '<span class="t3 shrink-0">'+labels[p.repeat_type]+'</span>'+
+    (isDue?'<button onclick="executeScheduled('+p.id+',\''+p.recipient+'\','+p.amount+',\''+(p.memo||"")+'\',\''+p.category+'\',\''+p.repeat_type+'\')" class="text-xs px-2.5 py-1 bg-violet-500/20 hover:bg-violet-500/40 border border-violet-500/30 text-violet-300 rounded-lg transition shrink-0">Send</button>':'')+
+    '<button onclick="deleteScheduled('+p.id+')" class="t3 hover:text-red-400 text-xs shrink-0 transition">✕</button></div>';
   }).join("");
 }
 
@@ -403,7 +403,13 @@ window.executeScheduled=async(id,recipient,amount,memo,category,repeatType)=>{
     const hash=await wc.sendTransaction({account,to:USDC_ADDRESS,data});
     await supabase.from("transactions").insert({wallet:account.toLowerCase(),recipient,amount:parseFloat(amount),memo,category,txhash:hash});
     if(repeatType==="once"){await supabase.from("scheduled_payments").update({status:"done"}).eq("id",id);}
-    else{const next=new Date();if(repeatType==="daily")next.setDate(next.getDate()+1);if(repeatType==="weekly")next.setDate(next.getDate()+7);if(repeatType==="monthly")next.setMonth(next.getMonth()+1);await supabase.from("scheduled_payments").update({scheduled_at:next.toISOString()}).eq("id",id);}
+    else{
+      const next=new Date();
+      if(repeatType==="daily")next.setDate(next.getDate()+1);
+      if(repeatType==="weekly")next.setDate(next.getDate()+7);
+      if(repeatType==="monthly")next.setMonth(next.getMonth()+1);
+      await supabase.from("scheduled_payments").update({scheduled_at:next.toISOString()}).eq("id",id);
+    }
     await Promise.all([loadHistory(),loadBalance(),loadScheduled()]);
     showToast('✅ Sent '+amount+' USDC! <a href="https://testnet.arcscan.app/tx/'+hash+'" target="_blank" class="underline">tx ↗</a>',"success");
   }catch(err){showToast("Error: "+err.message,"error");}
@@ -421,7 +427,7 @@ async function loadCalendarEvents(){
 
 function getDateKey(y,m,d){const pad=n=>String(n).padStart(2,"0");return y+"-"+pad(m+1)+"-"+pad(d);}
 
-// ─── MINI CALENDAR (inline) ───────────────────────────────────────────
+// ─── MINI CALENDAR ────────────────────────────────────────────────────
 $("prevMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()-1);renderCalendar();$("miniDayDetail").classList.add("hidden");};
 $("nextMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()+1);renderCalendar();$("miniDayDetail").classList.add("hidden");};
 
@@ -449,7 +455,7 @@ function renderCalendar(){
   allScheduled.forEach(p=>{const d=new Date(p.scheduled_at);if(d.getFullYear()===year&&d.getMonth()===month){const k=d.getDate();schedByDay[k]=(schedByDay[k]||0)+1;}});
   allCalendarEvents.forEach(e=>{const[ey,em,ed]=e.date.split("-").map(Number);if(ey===year&&em===month+1){eventsByDay[ed]=eventsByDay[ed]||[];eventsByDay[ed].push(e);}});
   const dn=["Su","Mo","Tu","We","Th","Fr","Sa"];
-  let html=dn.map(d=>'<div class="text-zinc-600 text-xs py-1 font-medium">'+d+'</div>').join("");
+  let html=dn.map(d=>'<div class="t3 text-xs py-1 font-medium">'+d+'</div>').join("");
   for(let i=0;i<firstDay;i++)html+="<div></div>";
   const today=new Date();
   for(let day=1;day<=daysInMonth;day++){
@@ -459,7 +465,7 @@ function renderCalendar(){
     if(hasTx)dots.push('<span class="w-1 h-1 rounded-full bg-emerald-500 inline-block"></span>');
     if(hasSched)dots.push('<span class="w-1 h-1 rounded-full bg-violet-500 inline-block"></span>');
     if(hasEv)hasEv.slice(0,2).forEach(e=>dots.push('<span class="w-1 h-1 rounded-full inline-block" style="background:'+e.color+'"></span>'));
-    html+='<div onclick="showMiniDayDetail('+day+','+year+','+month+')" class="py-1 rounded-lg text-center cursor-pointer flex flex-col items-center gap-0.5 hover:bg-zinc-800/60 transition '+(isToday?'ring-1 ring-emerald-500/50 bg-emerald-500/10 text-emerald-400 font-semibold':(hasTx||hasSched||hasEv?'text-white':'text-zinc-500'))+' text-xs">'+day+(dots.length?'<div class="flex gap-0.5">'+dots.join("")+'</div>':'<div class="h-1.5"></div>')+'</div>';
+    html+='<div onclick="showMiniDayDetail('+day+','+year+','+month+')" class="py-1 rounded-lg text-center cursor-pointer flex flex-col items-center gap-0.5 hover:bg-zinc-800/60 transition '+(isToday?'ring-1 ring-emerald-500/50 bg-emerald-500/10 text-emerald-400 font-semibold':(hasTx||hasSched||hasEv?'font-medium':'t3'))+' text-xs">'+day+(dots.length?'<div class="flex gap-0.5">'+dots.join("")+'</div>':'<div class="h-1.5"></div>')+'</div>';
   }
   $("calendarGrid").innerHTML=html;
 }
@@ -474,14 +480,28 @@ window.showMiniDayDetail=(day,year,month)=>{
   const total=txs.reduce((s,tx)=>s+parseFloat(tx.amount),0);
   $("miniDayTotal").textContent=txs.length?total.toFixed(2)+" USDC":"";
   let html="";
-  events.forEach(e=>{html+='<div class="flex items-center justify-between text-xs py-1 px-2 rounded-lg" style="background:'+e.color+'18">'+
-    '<span>'+(TYPE_ICONS[e.type]||"📝")+' '+e.title+'</span>'+
-    '<button onclick="deleteMiniEvent('+e.id+')" class="text-zinc-600 hover:text-red-400 transition">✕</button></div>';});
+  events.forEach(e=>{
+    html+='<div class="flex items-center justify-between text-xs py-1 px-2 rounded-lg" style="background:'+e.color+'18">' +
+    '<span>'+(TYPE_ICONS[e.type]||"📝")+' '+e.title+'</span>' +
+    '<div class="flex gap-1 ml-2">' +
+    '<button onclick="editMiniEvent('+e.id+',\''+e.title+'\')" class="text-zinc-500 hover:text-blue-400 transition text-xs">✎</button>' +
+    '<button onclick="deleteMiniEvent('+e.id+')" class="text-zinc-500 hover:text-red-400 transition text-xs">✕</button>' +
+    '</div></div>';
+  });
   scheds.forEach(p=>{html+='<div class="text-xs py-1 px-2 bg-violet-500/10 rounded-lg text-violet-300">💸 '+(getContactName(p.recipient)||p.recipient.slice(0,8)+"...")+" · "+p.amount+' USDC</div>';});
-  txs.forEach(tx=>{html+='<div class="flex justify-between text-xs py-1 px-2 bg-zinc-900/60 rounded-lg"><span class="text-zinc-400">'+(getContactName(tx.recipient)||tx.recipient.slice(0,6)+"...")+'</span><span class="text-emerald-400">'+tx.amount+' USDC</span></div>';});
-  if(!html)html='<p class="text-zinc-600 text-xs text-center py-1">Nothing here</p>';
+  txs.forEach(tx=>{html+='<div class="flex justify-between text-xs py-1 px-2 bg-zinc-900/60 rounded-lg"><span class="t2">'+(getContactName(tx.recipient)||tx.recipient.slice(0,6)+"...")+'</span><span class="text-emerald-400">'+tx.amount+' USDC</span></div>';});
+  if(!html)html='<p class="t3 text-xs text-center py-1">Nothing here</p>';
   $("miniDayContent").innerHTML=html;
   $("miniDayDetail").classList.remove("hidden");
+};
+
+window.editMiniEvent=async(id,oldTitle)=>{
+  const newTitle=prompt("Edit event name:",oldTitle);
+  if(!newTitle||newTitle.trim()===oldTitle)return;
+  await supabase.from("calendar_events").update({title:newTitle.trim()}).eq("id",id);
+  await loadCalendarEvents();
+  if(selectedMiniDay)showMiniDayDetail(selectedMiniDay.d,selectedMiniDay.y,selectedMiniDay.m);
+  showToast("Updated ✓","success");
 };
 
 window.deleteMiniEvent=async id=>{
@@ -494,32 +514,38 @@ window.deleteMiniEvent=async id=>{
 // ─── FULL CALENDAR MODAL ─────────────────────────────────────────────
 $("calendarBtn").onclick=()=>{$("calendarModal").classList.remove("hidden");renderModalCalendar();};
 $("closeCalendar").onclick=()=>$("calendarModal").classList.add("hidden");
-$("modalPrevMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()-1);renderModalCalendar();};
+$("modalPrevMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()-1);renderModalCalendar();renderCalendar();};
 $("modalNextMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()+1);renderModalCalendar();renderCalendar();};
+
 $("modalEventType").addEventListener("change",()=>{
-  $("modalPaymentFields").classList.toggle("hidden",$("modalEventType").value!=="payment");
-  $("modalEventColor").value=TYPE_COLORS[$("modalEventType").value]||"#6366f1";
+  const t=$("modalEventType").value;
+  $("modalPaymentFields").classList.toggle("hidden",t!=="payment");
+  $("modalCustomFields").classList.toggle("hidden",t!=="custom");
+  $("modalEventColor").value=TYPE_COLORS[t]||"#6366f1";
 });
 
 $("modalSaveEventBtn").onclick=async()=>{
   if(!account){showToast("Connect wallet first!","error");return;}
   if(!selectedModalDay){showToast("Select a day","error");return;}
-  const title=$("modalEventTitle").value.trim();
-  if(!title){showToast("Enter a title","error");return;}
-  const type=$("modalEventType").value, color=$("modalEventColor").value;
+  const type=$("modalEventType").value;
+  const color=$("modalEventColor").value;
+
   if(type==="payment"){
+    const rawTitle=$("modalEventTitle").value.trim()||"Transfer";
     const r=$("modalPayRecipient").value.trim(),a=$("modalPayAmount").value;
     if(!r||!a){showToast("Fill recipient and amount","error");return;}
     const pad=n=>String(n).padStart(2,"0");
     const dt=selectedModalDay.y+"-"+pad(selectedModalDay.m+1)+"-"+pad(selectedModalDay.d)+"T09:00";
-    await supabase.from("scheduled_payments").insert({wallet:account.toLowerCase(),recipient:r,amount:parseFloat(a),memo:title,category:"Payment",scheduled_at:new Date(dt).toISOString(),repeat_type:"once",status:"pending"});
-    await loadScheduled(); showToast("Payment scheduled ✓","success");
+    await supabase.from("scheduled_payments").insert({wallet:account.toLowerCase(),recipient:r,amount:parseFloat(a),memo:rawTitle,category:"Payment",scheduled_at:new Date(dt).toISOString(),repeat_type:"once",status:"pending"});
+    await loadScheduled(); showToast("Transfer scheduled ✓","success");
   } else {
+    let title = type==="custom" ? $("modalCustomLabel").value.trim() : $("modalEventTitle").value.trim();
+    if(!title){showToast("Enter a title","error");return;}
     const dateKey=getDateKey(selectedModalDay.y,selectedModalDay.m,selectedModalDay.d);
     await supabase.from("calendar_events").insert({wallet:account.toLowerCase(),date:dateKey,title,type,color});
     await loadCalendarEvents(); showToast("Saved ✓","success");
   }
-  $("modalEventTitle").value=""; $("modalPayRecipient").value=""; $("modalPayAmount").value="1";
+  $("modalEventTitle").value=""; $("modalPayRecipient").value=""; $("modalPayAmount").value="1"; $("modalCustomLabel").value="";
   renderModalCalendar();
   showModalDayDetail(selectedModalDay.d,selectedModalDay.y,selectedModalDay.m);
 };
@@ -529,6 +555,15 @@ window.deleteModalEvent=async id=>{
   await loadCalendarEvents(); renderModalCalendar();
   if(selectedModalDay)showModalDayDetail(selectedModalDay.d,selectedModalDay.y,selectedModalDay.m);
   showToast("Deleted","info");
+};
+
+window.editModalEvent=async(id,oldTitle)=>{
+  const newTitle=prompt("Edit event:",oldTitle);
+  if(!newTitle||newTitle.trim()===oldTitle)return;
+  await supabase.from("calendar_events").update({title:newTitle.trim()}).eq("id",id);
+  await loadCalendarEvents(); renderModalCalendar();
+  if(selectedModalDay)showModalDayDetail(selectedModalDay.d,selectedModalDay.y,selectedModalDay.m);
+  showToast("Updated ✓","success");
 };
 
 function renderModalCalendar(){
@@ -550,7 +585,13 @@ function renderModalCalendar(){
     if(hasTx)dots.push('<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>');
     if(hasSched)dots.push('<span class="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block"></span>');
     if(hasEv)hasEv.slice(0,3).forEach(e=>dots.push('<span class="w-1.5 h-1.5 rounded-full inline-block" style="background:'+e.color+'"></span>'));
-    html+='<div onclick="showModalDayDetail('+day+','+year+','+month+')" class="py-2 rounded-xl text-center cursor-pointer flex flex-col items-center gap-0.5 hover:bg-zinc-800/60 transition '+(isToday?'ring-1 ring-emerald-500/50 bg-emerald-500/10 text-emerald-400 font-semibold':(hasTx||hasSched||hasEv?'text-white':'text-zinc-500'))+' text-xs">'+day+(dots.length?'<div class="flex gap-0.5">'+dots.join("")+'</div>':'<div class="h-2"></div>')+'</div>';
+    // Show event names under day number
+    const evNames=hasEv?hasEv.slice(0,1).map(e=>'<div class="text-xs leading-tight truncate px-0.5" style="color:'+e.color+'">'+e.title+'</div>').join(""):"";
+    html+='<div onclick="showModalDayDetail('+day+','+year+','+month+')" class="py-1.5 rounded-xl text-center cursor-pointer flex flex-col items-center hover:bg-zinc-800/60 transition '+(isToday?'ring-1 ring-emerald-500/50 bg-emerald-500/10 text-emerald-400 font-semibold':(hasTx||hasSched||hasEv?'text-white':'text-zinc-500'))+' text-xs min-h-[48px] justify-start pt-1.5">'+
+    '<span>'+day+'</span>'+
+    (dots.length?'<div class="flex gap-0.5 mt-0.5">'+dots.join("")+'</div>':'')+
+    evNames+
+    '</div>';
   }
   $("modalCalendarGrid").innerHTML=html;
 }
@@ -565,12 +606,17 @@ window.showModalDayDetail=(day,year,month)=>{
   const total=txs.reduce((s,tx)=>s+parseFloat(tx.amount),0);
   $("modalDayTotal").textContent=txs.length?total.toFixed(2)+" USDC":"";
   let html="";
-  events.forEach(e=>{html+='<div class="flex items-center justify-between p-2 rounded-xl text-xs" style="background:'+e.color+'18;border:1px solid '+e.color+'30">'+
+  events.forEach(e=>{
+    html+='<div class="flex items-center justify-between p-2 rounded-xl text-xs" style="background:'+e.color+'18;border:1px solid '+e.color+'30">'+
     '<span>'+(TYPE_ICONS[e.type]||"📝")+' '+e.title+'</span>'+
-    '<button onclick="deleteModalEvent('+e.id+')" class="text-zinc-600 hover:text-red-400 transition ml-2">✕</button></div>';});
+    '<div class="flex gap-1.5 ml-2">'+
+    '<button onclick="editModalEvent('+e.id+',\''+e.title+'\')" class="text-zinc-500 hover:text-blue-400 transition">✎</button>'+
+    '<button onclick="deleteModalEvent('+e.id+')" class="text-zinc-500 hover:text-red-400 transition">✕</button>'+
+    '</div></div>';
+  });
   scheds.forEach(p=>{html+='<div class="p-2 bg-violet-500/10 border border-violet-500/20 rounded-xl text-xs text-violet-300">💸 '+(getContactName(p.recipient)||p.recipient.slice(0,8)+"...")+" · "+p.amount+' USDC</div>';});
   txs.forEach(tx=>{html+='<div class="flex justify-between p-2 bg-zinc-800/60 rounded-xl text-xs"><span class="text-zinc-300">'+(getContactName(tx.recipient)||tx.recipient.slice(0,8)+"...")+'</span><span class="text-emerald-400 font-semibold">'+tx.amount+' USDC</span></div>';});
-  if(!html)html='<p class="text-zinc-600 text-xs text-center py-2">Nothing here yet — add something below</p>';
+  if(!html)html='<p class="text-zinc-600 text-xs text-center py-2">Nothing here — add something below</p>';
   $("modalDayContent").innerHTML=html;
   $("modalDayDetails").classList.remove("hidden");
 };
