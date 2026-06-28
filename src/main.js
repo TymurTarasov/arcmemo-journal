@@ -475,7 +475,7 @@ window.showMiniDayDetail=(day,year,month)=>{
   $("miniDayTotal").textContent=txs.length?total.toFixed(2)+" USDC":"";
   let html="";
   events.forEach(e=>{html+='<div class="flex items-center justify-between text-xs py-1 px-2 rounded-lg" style="background:'+e.color+'18">'+
-    '<span>'+TYPE_ICONS[e.type]||"📝"]+' '+e.title+'</span>'+
+    '<span>'+(TYPE_ICONS[e.type]||"📝")+' '+e.title+'</span>'+
     '<button onclick="deleteMiniEvent('+e.id+')" class="text-zinc-600 hover:text-red-400 transition">✕</button></div>';});
   scheds.forEach(p=>{html+='<div class="text-xs py-1 px-2 bg-violet-500/10 rounded-lg text-violet-300">💸 '+(getContactName(p.recipient)||p.recipient.slice(0,8)+"...")+" · "+p.amount+' USDC</div>';});
   txs.forEach(tx=>{html+='<div class="flex justify-between text-xs py-1 px-2 bg-zinc-900/60 rounded-lg"><span class="text-zinc-400">'+(getContactName(tx.recipient)||tx.recipient.slice(0,6)+"...")+'</span><span class="text-emerald-400">'+tx.amount+' USDC</span></div>';});
