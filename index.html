@@ -32,10 +32,9 @@
       .btn-s { background: var(--btn-bg); border-color: var(--border); color: var(--btn-text); }
       .btn-s:hover { background: var(--btn-hover); }
 
-      /* Light mode overrides */
       .light .bg-zinc-800\/40 { background: rgba(226,232,240,0.5) !important; }
       .light .bg-zinc-800\/30 { background: rgba(241,245,249,0.8) !important; }
-      .light .bg-zinc-900\/60 { background: rgba(255,255,255,0.9) !important; }
+      .light .bg-zinc-800\/60 { background: rgba(226,232,240,0.6) !important; }
       .light .bg-zinc-800 { background: #e2e8f0 !important; }
       .light .hover\:bg-zinc-700:hover { background: #cbd5e1 !important; }
       .light .hover\:bg-zinc-800:hover { background: #e2e8f0 !important; }
@@ -48,26 +47,25 @@
       .light .text-zinc-300 { color: #334155 !important; }
       .light .text-zinc-200 { color: #1e293b !important; }
       .light .bg-zinc-900 { background: #ffffff !important; }
-      .light .bg-zinc-800\/60 { background: rgba(226,232,240,0.8) !important; }
       .light select option { background: #ffffff; color: #0f172a; }
 
       /* Theme toggle */
-      .theme-toggle-wrap { display: flex; align-items: center; gap: 6px; }
-      .theme-icon { font-size: 14px; line-height: 1; user-select: none; }
       .theme-track {
-        width: 44px; height: 24px; border-radius: 12px; position: relative;
-        cursor: pointer; border: none; padding: 0; transition: background 0.3s;
-        flex-shrink: 0;
+        width: 40px; height: 22px; border-radius: 11px; position: relative;
+        cursor: pointer; border: none; padding: 0; transition: background 0.3s; flex-shrink: 0;
       }
       .dark .theme-track { background: #4338ca; }
       .light .theme-track { background: #f59e0b; }
       .theme-track::after {
-        content: ''; position: absolute; width: 18px; height: 18px;
+        content: ''; position: absolute; width: 16px; height: 16px;
         border-radius: 50%; top: 3px; background: white;
         transition: left 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       }
       .dark .theme-track::after { left: 3px; }
-      .light .theme-track::after { left: 23px; }
+      .light .theme-track::after { left: 21px; }
+
+      /* Selected day highlight */
+      .cal-day-selected { ring: 2px; background: rgba(99,102,241,0.2) !important; outline: 2px solid #6366f1; outline-offset: -2px; border-radius: 8px; }
     </style>
   </head>
   <body>
@@ -80,24 +78,43 @@
 
       <!-- Header -->
       <div class="flex items-center justify-between mb-10">
+        <!-- Left: Logo + Name -->
         <div class="flex items-center gap-3">
           <img src="/logo.png" alt="MemoJournal" class="w-12 h-12 rounded-2xl">
           <div>
             <div class="flex items-center gap-2">
               <span class="text-xl font-bold tracking-tight">MemoJournal</span>
-              <span class="text-xs px-2 py-0.5 btn-s rounded-full border bdr">Testnet</span>
+              <span class="text-xs px-1.5 py-0.5 bg-zinc-800/80 text-zinc-500 rounded-md border border-zinc-700/50 font-mono tracking-wider">DEMO</span>
             </div>
-            <div class="text-xs t3 tracking-wider">Send USDC. Remember why.</div>
+            <div class="text-xs t3 tracking-wider mt-0.5">Send USDC. Remember why.</div>
           </div>
         </div>
-        <div class="flex items-center gap-3">
-          <div class="theme-toggle-wrap">
-            <span class="theme-icon">☀️</span>
+
+        <!-- Right: controls -->
+        <div class="flex items-center gap-2">
+          <!-- Faucet -->
+          <a href="https://faucet.circle.com/" target="_blank"
+            class="w-9 h-9 flex items-center justify-center rounded-2xl btn-s border transition text-base" title="Get test USDC">
+            💧
+          </a>
+          <!-- X -->
+          <a href="https://x.com/Memo_Journal" target="_blank"
+            class="w-9 h-9 flex items-center justify-center rounded-2xl btn-s border transition font-bold text-sm" title="Follow on X">
+            𝕏
+          </a>
+          <!-- Theme toggle -->
+          <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl btn-s border">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="t3"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
             <button id="themeToggle" class="theme-track" title="Toggle theme"></button>
-            <span class="theme-icon">🌙</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="t3"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </div>
-          <div id="balanceDisplay" class="text-sm font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-2xl"></div>
-          <div id="walletStatus" class="text-sm t2"></div>
+          <!-- Balance -->
+          <div id="balanceDisplay" class="text-sm font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-2xl hidden"></div>
+          <!-- Wallet info -->
+          <div class="flex flex-col items-end">
+            <div id="walletStatus" class="text-sm t2"></div>
+            <div id="networkBadge" class="hidden text-xs text-zinc-500 font-mono">Arc Testnet</div>
+          </div>
           <button id="connectBtn" class="px-5 py-2.5 bg-white text-black text-sm font-medium rounded-2xl hover:bg-zinc-100 transition">Connect Wallet</button>
         </div>
       </div>
@@ -173,11 +190,14 @@
               <button id="calendarBtn" class="w-7 h-7 flex items-center justify-center hover:bg-zinc-800 rounded-lg transition t3 text-sm" title="Expand">⤢</button>
             </div>
           </div>
-          <div class="flex gap-3 mb-2 flex-wrap">
+          <!-- Legend -->
+          <div class="flex gap-2 mb-2 flex-wrap">
             <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>Tx</span>
             <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block"></span>Sched</span>
             <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block"></span>Note</span>
             <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block"></span>Event</span>
+            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-purple-400 inline-block"></span>Custom</span>
+            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-teal-400 inline-block"></span>Transfer</span>
           </div>
           <div id="calendarGrid" class="grid grid-cols-7 gap-0.5 text-center text-xs"></div>
 
@@ -187,9 +207,7 @@
               <span id="miniSelectedDate" class="text-xs font-semibold"></span>
               <span id="miniDayTotal" class="text-xs font-mono text-emerald-400"></span>
             </div>
-            <div id="miniDayContent" class="space-y-1 max-h-32 overflow-y-auto mb-2"></div>
-
-            <!-- Add event -->
+            <div id="miniDayContent" class="space-y-1 max-h-36 overflow-y-auto mb-2"></div>
             <div class="space-y-1.5">
               <div class="flex gap-1.5">
                 <input id="miniEventTitle" type="text" placeholder="Title..."
@@ -203,12 +221,10 @@
                 </select>
                 <button id="miniSaveEventBtn" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-medium text-xs rounded-xl transition shrink-0">+</button>
               </div>
-              <!-- Custom name -->
               <div id="miniCustomFields" class="hidden">
                 <input id="miniCustomLabel" type="text" placeholder="Custom event name..."
                   class="inp w-full border rounded-xl px-3 py-1.5 text-xs">
               </div>
-              <!-- Transfer fields -->
               <div id="miniPaymentFields" class="hidden space-y-1.5">
                 <div class="flex gap-1.5">
                   <input id="miniPayRecipient" type="text" placeholder="Recipient 0x..."
@@ -313,6 +329,8 @@
             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>Note</span>
             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>Event</span>
             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pink-400 inline-block"></span>Holiday</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>Custom</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-teal-400 inline-block"></span>Transfer</span>
           </div>
           <div id="modalCalendarGrid" class="grid grid-cols-7 gap-1 text-center text-xs mb-4"></div>
           <div id="modalDayDetails" class="hidden border-t border-zinc-800 pt-4">
