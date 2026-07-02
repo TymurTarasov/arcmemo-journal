@@ -739,8 +739,58 @@ window.showModalDayDetail=(day,year,month)=>{
 // ─── SWAP ────────────────────────────────────────────────────────────
 const SWAP_RELAYER_ADDRESS = "0x5556513A943F6d3Ab90802470aDDAD1775B9Baf0";
 const SWAP_TOKENS = {
-  USDC: { address: "0x3600000000000000000000000000000000000000", decimals: 6 },
-  EURC: { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", decimals: 6 },
+  USDC:   "0x3600000000000000000000000000000000000000",
+  USDT:   "0x175CdB1D338945f0D851A741ccF787D343E57952",
+  EURC:   "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+  cirBTC: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF",
+};
+const DECIMALS_ABI = [{ name: "decimals", type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint8" }] }];
+
+$("swapDirectionBtn").onclick = () => {
+  const a = $("swapTokenIn").value, b = $("swapTokenOut").value;
+  $("swapTokenIn").value = b; $("swapTokenOut").value = a;
+};
+
+$("swapBtn").onclick = async () => {
+  if (!account) { showToast("Connect wallet first!", "error"); return; }
+  const tokenIn = $("swapTokenIn").value, tokenOut = $("swapTokenOut").value;
+  const amount = $("swapAmount").value;
+  if (tokenIn === tokenOut) { showToast("Choose two different tokens", "error"); return; }
+  if (!amount || parseFloat(amount) <= 0) { showToast("Enter a valid amount", "error"); return; }
+
+  const btn = $("swapBtn"), status = $("swapStatus");
+  btn.disabled = true; status.classList.remove("hidden");
+  try {
+    const pc = createPublicClient({ chain: ARC_TESTNET, transport: custom(window.ethereum) });
+    const decIn = await pc.readContract({ address: SWAP_TOKENS[tokenIn], abi: DECIMALS_ABI, functionName: "decimals" });
+
+    status.textContent = "Step 1/2: sending " + tokenIn + " deposit...";
+    btn.textContent = "⏳ Depositing...";
+    const wc = createWalletClient({ chain: ARC_TESTNET, transport: custom(window.ethereum) });
+    const data = encodeFunctionData({
+      abi: ERC20_ABI, functionName: "transfer",
+      args: [SWAP_RELAYER_ADDRESS, parseUnits(amount, decIn)],
+    });
+    const depositTxHash = await wc.sendTransaction({ account, to: SWAP_TOKENS[tokenIn], data });
+
+    status.textContent = "Step 2/2: calculating rate & sending payout...";
+    btn.textContent = "⏳ Swapping...";
+    const resp = await fetch("/api/swap", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet: account, depositTxHash, tokenIn, tokenOut, amountIn: amount }),
+    });
+    const result = await resp.json();
+    if (!resp.ok) throw new Error(result.error || "Swap failed");
+
+    showToast('✅ Swapped! Received ' + result.amountOut + ' ' + tokenOut + '. <a href="' + result.explorerUrl + '" target="_blank" class="underline">tx ↗</a>', "success");
+    await loadBalance();
+    status.classList.add("hidden");
+  } catch (err) {
+    showToast("Swap error: " + err.message, "error");
+    status.textContent = "Error — see toast above";
+  } finally {
+    btn.disabled = false; btn.textContent = "Swap →";
+  }
 };
 
 $("swapDirectionBtn").onclick = () => {
