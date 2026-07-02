@@ -736,6 +736,7 @@ window.showModalDayDetail=(day,year,month)=>{
   $("modalDayContent").innerHTML=html;
   $("modalDayDetails").classList.remove("hidden");
 };
+
 // ─── SWAP ────────────────────────────────────────────────────────────
 const SWAP_RELAYER_ADDRESS = "0x5556513A943F6d3Ab90802470aDDAD1775B9Baf0";
 const SWAP_TOKENS = {
@@ -774,50 +775,6 @@ $("swapBtn").onclick = async () => {
     const depositTxHash = await wc.sendTransaction({ account, to: SWAP_TOKENS[tokenIn], data });
 
     status.textContent = "Step 2/2: calculating rate & sending payout...";
-    btn.textContent = "⏳ Swapping...";
-    const resp = await fetch("/api/swap", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wallet: account, depositTxHash, tokenIn, tokenOut, amountIn: amount }),
-    });
-    const result = await resp.json();
-    if (!resp.ok) throw new Error(result.error || "Swap failed");
-
-    showToast('✅ Swapped! Received ' + result.amountOut + ' ' + tokenOut + '. <a href="' + result.explorerUrl + '" target="_blank" class="underline">tx ↗</a>', "success");
-    await loadBalance();
-    status.classList.add("hidden");
-  } catch (err) {
-    showToast("Swap error: " + err.message, "error");
-    status.textContent = "Error — see toast above";
-  } finally {
-    btn.disabled = false; btn.textContent = "Swap →";
-  }
-};
-
-$("swapDirectionBtn").onclick = () => {
-  const a = $("swapTokenIn").value, b = $("swapTokenOut").value;
-  $("swapTokenIn").value = b; $("swapTokenOut").value = a;
-};
-
-$("swapBtn").onclick = async () => {
-  if (!account) { showToast("Connect wallet first!", "error"); return; }
-  const tokenIn = $("swapTokenIn").value, tokenOut = $("swapTokenOut").value;
-  const amount = $("swapAmount").value;
-  if (tokenIn === tokenOut) { showToast("Choose two different tokens", "error"); return; }
-  if (!amount || parseFloat(amount) <= 0) { showToast("Enter a valid amount", "error"); return; }
-
-  const btn = $("swapBtn"), status = $("swapStatus");
-  btn.disabled = true; status.classList.remove("hidden");
-  try {
-    status.textContent = "Step 1/2: sending " + tokenIn + " deposit...";
-    btn.textContent = "⏳ Depositing...";
-    const wc = createWalletClient({ chain: ARC_TESTNET, transport: custom(window.ethereum) });
-    const data = encodeFunctionData({
-      abi: ERC20_ABI, functionName: "transfer",
-      args: [SWAP_RELAYER_ADDRESS, parseUnits(amount, SWAP_TOKENS[tokenIn].decimals)],
-    });
-    const depositTxHash = await wc.sendTransaction({ account, to: SWAP_TOKENS[tokenIn].address, data });
-
-    status.textContent = "Step 2/2: swapping via Circle...";
     btn.textContent = "⏳ Swapping...";
     const resp = await fetch("/api/swap", {
       method: "POST", headers: { "Content-Type": "application/json" },
