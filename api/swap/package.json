@@ -1,0 +1,19 @@
+{
+  "name": "swap",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@circle-fin/adapter-viem-v2": "^1.12.1",
+    "@circle-fin/app-kit": "^1.8.1",
+    "@supabase/supabase-js": "^2.110.0",
+    "viem": "^2.54.1"
+  }
+}
