@@ -58,8 +58,10 @@
         border-radius: 50%; top: 3px; background: white;
         transition: left 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       }
-      .dark .theme-track::after { left: 3px; }
-      .light .theme-track::after { left: 21px; }
+      /* Dark theme -> knob sits near the moon icon (right side) */
+      .dark .theme-track::after { left: 21px; }
+      /* Light theme -> knob sits near the sun icon (left side) */
+      .light .theme-track::after { left: 3px; }
       /* Multi-send recipient row */
       .recipient-row { display: flex; gap: 8px; align-items: center; }
       .recipient-row:not(:last-child) { margin-bottom: 8px; }
@@ -111,8 +113,9 @@
             <div class="w-1.5 h-5 bg-emerald-500 rounded-full"></div>
             <h2 class="text-base font-semibold">Send USDC</h2>
           </div>
-          <button id="switchToMultiBtn" class="text-xs px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 rounded-xl transition">
-            ⚡ Multi-send
+          <button id="switchToMultiBtn" class="text-xs px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 rounded-xl transition inline-flex items-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            Multi-send
           </button>
         </div>
         <div class="space-y-3">
@@ -199,51 +202,12 @@
           </div>
         </div>
 
-        <button id="multiSendBtn" class="w-full bg-emerald-500 hover:bg-emerald-400 transition text-black font-semibold py-3 rounded-2xl text-sm">
-          ⚡ Send to All →
+        <button id="multiSendBtn" class="w-full bg-emerald-500 hover:bg-emerald-400 transition text-black font-semibold py-3 rounded-2xl text-sm inline-flex items-center justify-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <span id="multiSendBtnLabel">Send to All →</span>
         </button>
       <!-- Progress -->
         <div id="multiProgress" class="hidden mt-3 space-y-1.5"></div>
-      </div>
-
-      <!-- Swap Card -->
-      <div class="card border rounded-3xl p-6 mb-5">
-        <div class="flex items-center gap-2 mb-5">
-          <div class="w-1.5 h-5 bg-indigo-500 rounded-full"></div>
-          <h2 class="text-base font-semibold">Swap Tokens</h2>
-          <span class="text-xs px-2 py-0.5 bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 rounded-lg">via Circle</span>
-        </div>
-        <div class="space-y-3">
-          <div class="grid grid-cols-2 gap-3 items-end">
-            <div>
-              <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">From</label>
-              <select id="swapTokenIn" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm font-medium">
-                <option value="USDC">USDC</option>
-                <option value="USDT">USDT</option>
-                <option value="EURC">EURC</option>
-                <option value="cirBTC">cirBTC</option>
-              </select>
-            </div>
-            <div class="flex justify-center">
-              <button id="swapDirectionBtn" class="w-10 h-10 rounded-full btn-s border flex items-center justify-center text-sm">⇅</button>
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">To</label>
-            <select id="swapTokenOut" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm font-medium">
-              <option value="EURC">EURC</option>
-              <option value="USDC">USDC</option>
-              <option value="USDT">USDT</option>
-              <option value="cirBTC">cirBTC</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Amount</label>
-            <input id="swapAmount" type="number" value="1" step="0.01" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
-          </div>
-        </div>
-        <button id="swapBtn" class="mt-5 w-full bg-indigo-500 hover:bg-indigo-400 transition text-white font-semibold py-3 rounded-2xl text-sm">Swap →</button>
-        <div id="swapStatus" class="hidden mt-3 text-xs t3 text-center"></div>
       </div>
 
       <!-- Contacts + Calendar -->
@@ -364,6 +328,60 @@
         <div id="scheduledList"><div class="text-center py-6 t3 text-xs">No scheduled payments</div></div>
       </div>
 
+      <!-- Swap Card -->
+      <div class="card border rounded-3xl p-6 mb-5">
+        <div class="flex items-center gap-2 mb-5">
+          <div class="w-1.5 h-5 bg-indigo-500 rounded-full"></div>
+          <h2 class="text-base font-semibold">Swap Tokens</h2>
+          <span class="text-xs px-2 py-0.5 bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 rounded-lg">via Circle</span>
+        </div>
+
+        <div class="relative">
+          <!-- From -->
+          <div class="border bdr rounded-2xl p-3.5" style="background:var(--card)">
+            <div class="flex justify-between items-center mb-1.5">
+              <label class="text-xs t3 font-medium uppercase tracking-wider">From</label>
+              <span id="swapBalanceIn" class="text-xs t3"></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="swapAmount" type="number" value="1" step="0.01" class="flex-1 bg-transparent border-0 outline-none text-xl font-semibold p-0 min-w-0">
+              <select id="swapTokenIn" class="inp border rounded-xl px-3 py-2 text-sm font-semibold shrink-0">
+                <option value="USDC">USDC</option>
+                <option value="USDT">USDT</option>
+                <option value="EURC">EURC</option>
+                <option value="cirBTC">cirBTC</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Direction button -->
+          <div class="flex justify-center" style="height:0;">
+            <button id="swapDirectionBtn" class="relative -top-3.5 w-8 h-8 rounded-full btn-s border-4 flex items-center justify-center text-sm z-10" style="border-color:var(--bg)" title="Reverse">⇅</button>
+          </div>
+
+          <!-- To -->
+          <div class="border bdr rounded-2xl p-3.5 -mt-1" style="background:var(--card)">
+            <div class="flex justify-between items-center mb-1.5">
+              <label class="text-xs t3 font-medium uppercase tracking-wider">To</label>
+              <span id="swapBalanceOut" class="text-xs t3"></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div id="swapEstimateOut" class="flex-1 text-xl font-semibold t3 truncate">0.00</div>
+              <select id="swapTokenOut" class="inp border rounded-xl px-3 py-2 text-sm font-semibold shrink-0">
+                <option value="EURC">EURC</option>
+                <option value="USDC">USDC</option>
+                <option value="USDT">USDT</option>
+                <option value="cirBTC">cirBTC</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="swapRateInfo" class="text-xs t3 text-center mt-3"></div>
+        <button id="swapBtn" class="mt-3 w-full bg-indigo-500 hover:bg-indigo-400 transition text-white font-semibold py-3 rounded-2xl text-sm">Swap →</button>
+        <div id="swapStatus" class="hidden mt-3 text-xs t3 text-center"></div>
+      </div>
+
       <!-- History -->
       <div class="card border rounded-3xl p-5 mb-8">
         <div class="flex items-center justify-between mb-4">
@@ -378,6 +396,7 @@
           </div>
         </div>
         <div id="historyList" class="space-y-1.5"></div>
+        <div id="historyToggleWrap"></div>
       </div>
 
       <!-- Footer -->

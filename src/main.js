@@ -27,6 +27,8 @@ let allHistory = [], allContacts = [], allCategories = [], allCalendarEvents = [
 let currentCalDate = new Date();
 let selectedMiniDay = null, selectedModalDay = null;
 let multiRecipients = [];
+let historyExpanded = false, lastHistoryFull = [];
+const HISTORY_PAGE_SIZE = 10;
 
 // ─── THEME ───────────────────────────────────────────────────────────
 let isDark = localStorage.getItem("mj_theme") !== "light";
@@ -196,7 +198,7 @@ $("multiSendBtn").onclick = async () => {
   const category = $("multiCategory").value;
   if (!amount || parseFloat(amount) <= 0) { showToast("Enter a valid amount", "error"); return; }
 
-  $("multiSendBtn").textContent = "⏳ Sending..."; $("multiSendBtn").disabled = true;
+  $("multiSendBtnLabel").textContent = "Sending..."; $("multiSendBtn").disabled = true;
   $("multiProgress").classList.remove("hidden");
   $("multiProgress").innerHTML = recipients.map(r =>
     '<div id="prog-' + r.id + '" class="flex items-center gap-2 text-xs px-3 py-2 rounded-xl border bdr">' +
@@ -228,7 +230,7 @@ $("multiSendBtn").onclick = async () => {
   }
 
   await Promise.all([loadHistory(), loadBalance()]);
-  $("multiSendBtn").textContent = "⚡ Send to All →"; $("multiSendBtn").disabled = false;
+  $("multiSendBtnLabel").textContent = "Send to All →"; $("multiSendBtn").disabled = false;
   showToast("✅ Done! " + successCount + " sent" + (failCount ? ", " + failCount + " failed" : ""), successCount > 0 ? "success" : "error");
 };
 
@@ -313,7 +315,7 @@ window.addEventListener("load", async () => {
     const accounts = await window.ethereum.request({ method: "eth_accounts" });
     if (accounts.length > 0) {
       account = accounts[0]; updateWalletUI(); await switchToArc();
-      await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents()]);
+      await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances()]);
     }
   } catch (e) { console.log("Auto-connect:", e); }
 });
@@ -324,7 +326,7 @@ $("connectBtn").onclick = async () => {
   try {
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
     account = accounts[0]; updateWalletUI(); await switchToArc();
-    await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents()]);
+    await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances()]);
   } catch (err) { showToast("Error: " + err.message, "error"); }
 };
 function updateWalletUI() {
@@ -347,11 +349,13 @@ function disconnectWallet() {
     try {
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
       account = accounts[0]; updateWalletUI(); await switchToArc();
-      await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents()]);
+      await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances()]);
     } catch (err) { showToast("Error: " + err.message, "error"); }
   };
+  historyExpanded = false;
   renderHistory([]); renderContacts([]);
   $("scheduledList").innerHTML = '<div class="text-center py-6 t3 text-xs">No scheduled payments</div>';
+  updateSwapBalances();
   showToast("Wallet disconnected", "info");
 }
 async function loadBalance() {
@@ -403,9 +407,15 @@ function getContactName(addr) {
   return c ? c.name : null;
 }
 function renderHistory(items) {
-  const el = $("historyList");
-  if (!items.length) { el.innerHTML = '<div class="text-center py-8 t3 text-sm">No transactions yet</div>'; return; }
-  el.innerHTML = items.map(tx => {
+  lastHistoryFull = items;
+  const el = $("historyList"), toggleWrap = $("historyToggleWrap");
+  if (!items.length) {
+    el.innerHTML = '<div class="text-center py-8 t3 text-sm">No transactions yet</div>';
+    if (toggleWrap) toggleWrap.innerHTML = "";
+    return;
+  }
+  const shown = historyExpanded ? items : items.slice(0, HISTORY_PAGE_SIZE);
+  el.innerHTML = shown.map(tx => {
     const name = getContactName(tx.recipient), color = getCategoryColor(tx.category);
     const short = tx.recipient.slice(0,6) + "..." + tx.recipient.slice(-4);
     const date = new Date(tx.created_at).toLocaleDateString("en-US", { month:"short", day:"numeric" });
@@ -422,8 +432,18 @@ function renderHistory(items) {
       '</div>'
     );
   }).join("");
+  if (toggleWrap) {
+    if (items.length > HISTORY_PAGE_SIZE) {
+      toggleWrap.innerHTML = '<button onclick="toggleHistoryExpand()" class="w-full text-xs t3 hover:text-white transition py-2 text-center">' +
+        (historyExpanded ? "▲ Show less" : "▼ Show " + (items.length - HISTORY_PAGE_SIZE) + " more") + '</button>';
+    } else {
+      toggleWrap.innerHTML = "";
+    }
+  }
 }
+window.toggleHistoryExpand = () => { historyExpanded = !historyExpanded; renderHistory(lastHistoryFull); };
 $("searchInput").addEventListener("input", () => {
+  historyExpanded = false;
   const q = $("searchInput").value.toLowerCase();
   renderHistory(allHistory.filter(tx =>
     tx.recipient.toLowerCase().includes(q) || (tx.memo&&tx.memo.toLowerCase().includes(q)) ||
@@ -747,9 +767,63 @@ const SWAP_TOKENS = {
 };
 const DECIMALS_ABI = [{ name: "decimals", type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint8" }] }];
 
+// live balances for the two selected tokens
+async function updateSwapBalances() {
+  const inEl = $("swapBalanceIn"), outEl = $("swapBalanceOut");
+  if (!account) { inEl.textContent = ""; outEl.textContent = ""; return; }
+  try {
+    const pc = createPublicClient({ chain: ARC_TESTNET, transport: http("https://rpc.testnet.arc.network") });
+    const tokenIn = $("swapTokenIn").value, tokenOut = $("swapTokenOut").value;
+    const [balIn, decIn, balOut, decOut] = await Promise.all([
+      pc.readContract({ address: SWAP_TOKENS[tokenIn], abi: ERC20_ABI, functionName: "balanceOf", args: [account] }),
+      pc.readContract({ address: SWAP_TOKENS[tokenIn], abi: DECIMALS_ABI, functionName: "decimals" }),
+      pc.readContract({ address: SWAP_TOKENS[tokenOut], abi: ERC20_ABI, functionName: "balanceOf", args: [account] }),
+      pc.readContract({ address: SWAP_TOKENS[tokenOut], abi: DECIMALS_ABI, functionName: "decimals" }),
+    ]);
+    inEl.textContent = "Balance: " + parseFloat(formatUnits(balIn, decIn)).toFixed(4);
+    outEl.textContent = "Balance: " + parseFloat(formatUnits(balOut, decOut)).toFixed(4);
+  } catch (e) { console.error("Swap balances:", e); }
+}
+
+// live exchange-rate estimate (mirrors the pricing logic used by api/swap)
+let cachedSwapRates = null, cachedSwapRatesTime = 0;
+async function getSwapRates() {
+  if (cachedSwapRates && Date.now() - cachedSwapRatesTime < 60000) return cachedSwapRates;
+  const [fx, btc] = await Promise.all([
+    fetch("https://open.er-api.com/v6/latest/USD").then(r => r.json()),
+    fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd").then(r => r.json()),
+  ]);
+  cachedSwapRates = { EURC: fx.rates.EUR, cirBTC: btc.bitcoin.usd, USDC: 1, USDT: 1 };
+  cachedSwapRatesTime = Date.now();
+  return cachedSwapRates;
+}
+function swapToUSD(symbol, amount, rates) { if (symbol === "EURC") return amount / rates.EURC; if (symbol === "cirBTC") return amount * rates.cirBTC; return amount; }
+function swapFromUSD(symbol, usd, rates) { if (symbol === "EURC") return usd * rates.EURC; if (symbol === "cirBTC") return usd / rates.cirBTC; return usd; }
+
+let swapEstimateTimer = null;
+function scheduleSwapEstimate() { clearTimeout(swapEstimateTimer); swapEstimateTimer = setTimeout(updateSwapEstimate, 300); }
+async function updateSwapEstimate() {
+  const tokenIn = $("swapTokenIn").value, tokenOut = $("swapTokenOut").value;
+  const amount = parseFloat($("swapAmount").value) || 0;
+  if (tokenIn === tokenOut || !amount) { $("swapEstimateOut").textContent = "0.00"; $("swapRateInfo").textContent = ""; return; }
+  try {
+    const rates = await getSwapRates();
+    const out = swapFromUSD(tokenOut, swapToUSD(tokenIn, amount, rates), rates);
+    $("swapEstimateOut").textContent = out.toFixed(6);
+    const unitRate = swapFromUSD(tokenOut, swapToUSD(tokenIn, 1, rates), rates);
+    $("swapRateInfo").textContent = "1 " + tokenIn + " ≈ " + unitRate.toFixed(6) + " " + tokenOut;
+  } catch (e) { $("swapRateInfo").textContent = "Rate unavailable"; }
+}
+
+$("swapAmount").addEventListener("input", scheduleSwapEstimate);
+$("swapTokenIn").addEventListener("change", () => { updateSwapBalances(); scheduleSwapEstimate(); });
+$("swapTokenOut").addEventListener("change", () => { updateSwapBalances(); scheduleSwapEstimate(); });
+scheduleSwapEstimate();
+
 $("swapDirectionBtn").onclick = () => {
   const a = $("swapTokenIn").value, b = $("swapTokenOut").value;
   $("swapTokenIn").value = b; $("swapTokenOut").value = a;
+  updateSwapBalances(); scheduleSwapEstimate();
 };
 
 $("swapBtn").onclick = async () => {
@@ -784,7 +858,7 @@ $("swapBtn").onclick = async () => {
     if (!resp.ok) throw new Error(result.error || "Swap failed");
 
     showToast('✅ Swapped! Received ' + result.amountOut + ' ' + tokenOut + '. <a href="' + result.explorerUrl + '" target="_blank" class="underline">tx ↗</a>', "success");
-    await loadBalance();
+    await Promise.all([loadBalance(), updateSwapBalances()]);
     status.classList.add("hidden");
   } catch (err) {
     showToast("Swap error: " + err.message, "error");
