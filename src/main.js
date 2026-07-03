@@ -74,8 +74,8 @@ function createContactModal() {
   const m = document.createElement("div");
   m.id = "contactPickModal";
   m.className = "hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60]";
-  m.innerHTML = `<div class="rounded-3xl w-full max-w-sm p-6 border" style="background:var(--surface);border-color:var(--border)">
-    <div class="flex items-center justify-between mb-4">
+  m.innerHTML = `<div class="relative rounded-3xl w-full max-w-sm p-6 border" style="background:var(--surface);border-color:var(--border)">
+    <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="20"/></svg>    <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-semibold">Choose a contact</h3>
       <button id="closeContactPickModal" class="icon-btn">${ICON_X}</button>
     </div>
@@ -352,7 +352,7 @@ function updateWalletUI() {
   $("networkBadge").classList.remove("hidden");
   $("balanceDisplay").classList.remove("hidden");
   const btn = $("connectBtn");
-  btn.textContent = "Disconnect";
+  $("connectBtnLabel").textContent = "Disconnect";
   btn.className = "btn-disconnect px-4 py-2.5 text-sm whitespace-nowrap";
   btn.onclick = disconnectWallet;
 }
@@ -361,7 +361,7 @@ function disconnectWallet() {
   $("walletStatus").innerHTML = ""; $("balanceDisplay").textContent = ""; $("balanceDisplay").classList.add("hidden");
   $("networkBadge").classList.add("hidden"); $("savedCategoriesBar").classList.add("hidden");
   const btn = $("connectBtn");
-  btn.textContent = "Connect Wallet";
+  $("connectBtnLabel").textContent = "Connect Wallet";
   btn.className = "btn-primary px-4 py-2.5 text-sm whitespace-nowrap";
   btn.onclick = async () => {
     try {
@@ -402,7 +402,7 @@ $("sendBtn").onclick = async () => {
   const to = $("recipient").value.trim(), amount = $("amount").value, memo = $("memo").value.trim(), category = $("category").value;
   if (!to || !amount) { showToast("Fill in recipient and amount", "error"); return; }
   try {
-    $("sendBtn").textContent = "Sending..."; $("sendBtn").disabled = true;
+    $("sendBtnLabel").textContent = "Sending..."; $("sendBtn").disabled = true;
     const wc = createWalletClient({ chain: ARC_TESTNET, transport: custom(window.ethereum) });
     const data = encodeFunctionData({ abi: ERC20_ABI, functionName: "transfer", args: [to, parseUnits(amount, 6)] });
     const hash = await wc.sendTransaction({ account, to: USDC_ADDRESS, data });
@@ -411,7 +411,7 @@ $("sendBtn").onclick = async () => {
     showToast('Sent ' + amount + ' USDC! <a href="https://testnet.arcscan.app/tx/'+hash+'" target="_blank" class="underline">tx ↗</a>', "success");
     $("recipient").value = ""; $("memo").value = ""; $("amount").value = "1";
   } catch (err) { showToast("Error: " + err.message, "error"); }
-  finally { $("sendBtn").textContent = "Send with Memo →"; $("sendBtn").disabled = false; }
+  finally { $("sendBtnLabel").textContent = "Send with Memo →"; $("sendBtn").disabled = false; }
 };
 
 // ─── HISTORY ─────────────────────────────────────────────────────────
@@ -858,7 +858,7 @@ $("swapBtn").onclick = async () => {
     const decIn = await pc.readContract({ address: SWAP_TOKENS[tokenIn], abi: DECIMALS_ABI, functionName: "decimals" });
 
     status.textContent = "Step 1/2: sending " + tokenIn + " deposit...";
-    btn.textContent = "Depositing...";
+    $("swapBtnLabel").textContent = "Depositing...";
     const wc = createWalletClient({ chain: ARC_TESTNET, transport: custom(window.ethereum) });
     const data = encodeFunctionData({
       abi: ERC20_ABI, functionName: "transfer",
@@ -867,7 +867,7 @@ $("swapBtn").onclick = async () => {
     const depositTxHash = await wc.sendTransaction({ account, to: SWAP_TOKENS[tokenIn], data });
 
     status.textContent = "Step 2/2: calculating rate & sending payout...";
-    btn.textContent = "Swapping...";
+    $("swapBtnLabel").textContent = "Swapping...";
     const resp = await fetch("/api/swap", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ wallet: account, depositTxHash, tokenIn, tokenOut, amountIn: amount }),
@@ -882,6 +882,6 @@ $("swapBtn").onclick = async () => {
     showToast("Swap error: " + err.message, "error");
     status.textContent = "Error — see toast above";
   } finally {
-    btn.disabled = false; btn.textContent = "Swap →";
+    btn.disabled = false; $("swapBtnLabel").textContent = "Swap →";
   }
 };

@@ -12,60 +12,74 @@
       /* ── HUMAN SCRIBBLE TOKENS ────────────────────────────────── */
       .dark {
         --bg: #1C1712; --surface: #241E17; --surface-2: #2C251C;
-        --border: #4A3D2C; --border-strong: #5C4B34;
+        --border: #4A3D2C; --border-strong: #5C4B34; --rule: rgba(240,230,210,0.07);
         --text: #F0E6D2; --text2: #C9BCA0; --text3: #8A7D68;
         --accent: #6E93C9; --accent-hover: #86A8DA; --accent-soft: rgba(110,147,201,0.16); --on-accent: #14202E;
         --success: #9DAD82; --success-soft: rgba(157,173,130,0.14);
         --danger: #E37A6A; --danger-soft: rgba(227,122,106,0.14);
         --memo-bg: #3A3016; --memo-border: #5C4A22; --memo-text: #F0E0A0; --memo-text2: #C9AE6E;
-        --sienna: #D89A73; --coral: #EDA890;
+        --sienna: #C4835A; --sienna-hover: #B06F47; --coral: #EDA890;
       }
       .light {
-        --bg: #FBF7F0; --surface: #F5EDE0; --surface-2: #EDE3D2;
-        --border: #DCCDAE; --border-strong: #C4A97D;
+        --bg: #FBF7F0; --surface: #FBF8F1; --surface-2: #EDE3D2;
+        --border: #DCCDAE; --border-strong: #C4A97D; --rule: rgba(74,60,30,0.09);
         --text: #2A2520; --text2: #4A4540; --text3: #9E9588;
         --accent: #4A6FA5; --accent-hover: #3A5A88; --accent-soft: rgba(74,111,165,0.10); --on-accent: #FFFFFF;
         --success: #7D8C64; --success-soft: rgba(125,140,100,0.12);
         --danger: #D45040; --danger-soft: rgba(212,80,64,0.10);
         --memo-bg: #FFF3B0; --memo-border: #E8D077; --memo-text: #4A3D1A; --memo-text2: #8A7526;
-        --sienna: #C47D5A; --coral: #E8927C;
+        --sienna: #C47D5A; --sienna-hover: #B06844; --coral: #E8927C;
       }
       * { box-sizing: border-box; }
-      body { background: var(--bg); color: var(--text); font-family: 'Inter',sans-serif; transition: background 0.3s, color 0.3s; min-height: 100vh; -webkit-font-smoothing: antialiased; position: relative; }
-      body::before {
-        content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .5;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      html, body { background: var(--bg); }
+      body {
+        color: var(--text); font-family: 'Inter',sans-serif; transition: background 0.3s, color 0.3s; min-height: 100vh;
+        -webkit-font-smoothing: antialiased; position: relative;
+        background-image: repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--rule) 28px);
       }
+      .notebook-margin { position: fixed; top: 0; bottom: 0; left: 26px; width: 1.5px; background: var(--danger); opacity: 0.4; z-index: 0; pointer-events: none; }
       .font-mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
       .font-hand { font-family: 'Caveat', cursive; }
       .font-hand2 { font-family: 'Patrick Hand', cursive; }
       .font-doodle { font-family: 'Indie Flower', cursive; }
 
-      /* ── CARD: organic radius + offset "sticker" shadow (hand-drawn, text-safe) ── */
-      .card { background: var(--surface); border: 2px solid var(--border-strong); border-radius: 22px 16px 24px 14px/16px 24px 14px 22px; box-shadow: 3px 4px 0 var(--border); position: relative; }
-      .inp { background: var(--surface-2); border: 1.5px solid var(--border); color: var(--text); border-radius: 10px; }
+      /* ── CARD: real hand-drawn SVG wobble border ─────────────────────────── */
+      .card { position: relative; background: var(--surface); border-radius: 16px; }
+      .hand-frame { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; overflow: visible; }
+      .hand-frame rect { fill: none; stroke: var(--text); stroke-width: 2.5; filter: url(#sketchy-lg); }
+
+      .inp { background: var(--surface-2); border: 1.5px solid var(--border); color: var(--text); border-radius: 8px; }
       .inp::placeholder { color: var(--text3); }
       .inp:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
       .t2 { color: var(--text2); }
       .t3 { color: var(--text3); }
       .bdr { border-color: var(--border); }
 
-      /* ── BUTTONS: hand-drawn ink outline + offset shadow that "lifts" ─────── */
-      .btn-primary { background: var(--accent); color: var(--on-accent); border: 2px solid var(--text); border-radius: 12px 8px 14px 8px; font-weight: 600; box-shadow: 2px 3px 0 var(--text); transition: transform .12s, box-shadow .12s; }
-      .btn-primary:hover { transform: translate(-1px,-1px); box-shadow: 3px 4px 0 var(--text); }
-      .btn-primary:active { transform: translate(1px,2px); box-shadow: 1px 1px 0 var(--text); }
+      /* ── BUTTONS: exact ref style — outline default / solid accent, hand-drawn border ── */
+      .btn-primary, .btn-secondary, .btn-ghost, .btn-accent-tint, .btn-disconnect {
+        position: relative; border: none; border-radius: 8px; font-weight: 500; transition: transform .12s;
+      }
+      .btn-primary:hover, .btn-secondary:hover, .btn-ghost:hover, .btn-accent-tint:hover, .btn-disconnect:hover { transform: translateY(-2px); }
+      .btn-primary:active, .btn-secondary:active, .btn-ghost:active, .btn-accent-tint:active, .btn-disconnect:active { transform: translateY(1px); }
+      .btn-primary { background: var(--sienna); color: #fff; font-weight: 600; }
+      .btn-primary:hover { background: var(--sienna-hover); }
       .btn-primary:disabled { opacity: .5; cursor: default; transform: none; }
-      .btn-secondary { background: var(--surface-2); border: 2px solid var(--border-strong); color: var(--text); border-radius: 12px 8px 14px 8px; font-weight: 500; box-shadow: 2px 2px 0 var(--border-strong); transition: transform .12s, box-shadow .12s; }
-      .btn-secondary:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--border-strong); }
-      .btn-ghost { background: transparent; border: 1.5px dashed var(--border-strong); color: var(--text2); border-radius: 12px; font-weight: 500; transition: all .15s; }
+      .btn-secondary { background: var(--surface); color: var(--text); }
+      .btn-ghost { background: transparent; color: var(--text2); }
       .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
-      .btn-accent-tint { background: var(--accent-soft); border: 1.5px dashed var(--accent); color: var(--accent); border-radius: 12px; font-weight: 500; transition: all .15s; }
-      .btn-accent-tint:hover { background: var(--accent); color: var(--on-accent); border-style: solid; }
-      .icon-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--text3); transition: all .15s; flex-shrink: 0; }
+      .btn-accent-tint { background: var(--accent-soft); color: var(--accent); }
+      .btn-accent-tint:hover { background: var(--accent); color: var(--on-accent); }
+      .btn-disconnect { background: var(--surface); color: var(--text2); }
+      .btn-disconnect:hover { background: var(--danger-soft); color: var(--danger); }
+      .hand-frame-btn { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; overflow: visible; }
+      .hand-frame-btn rect { fill: none; stroke: var(--text); stroke-width: 2; filter: url(#sketchy); }
+      .btn-primary .hand-frame-btn rect { stroke: rgba(255,255,255,0.55); }
+
+      .icon-btn { position: relative; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text3); transition: all .15s; flex-shrink: 0; }
       .icon-btn:hover { background: var(--surface-2); color: var(--text); }
       .icon { width: 16px; height: 16px; stroke-width: 1.75; }
 
-      /* ── SECTION HEADER: Patrick Hand + sketchy underline ─────────────────── */
+      /* ── SECTION HEADER ────────────────────────────────────────────────── */
       .sec-head { display: flex; align-items: center; gap: 8px; color: var(--text3); }
       .sec-head svg { width: 18px; height: 18px; stroke-width: 1.75; filter: url(#sketchy); }
       .sec-head h2 { color: var(--text); font-family: 'Patrick Hand', cursive; font-size: 20px; font-weight: 400; letter-spacing: 0.01em; }
@@ -83,13 +97,12 @@
       .memo-box:focus-within { transform: rotate(0deg); border-color: var(--memo-text2); }
       .memo-text { font-family: 'Caveat', cursive; color: var(--memo-text2); font-size: 18px; line-height: 1.25; }
 
-      /* ── SKETCHY UNDERLINE (decorative SVG, safe on non-text elements) ───── */
       .sketch-underline {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14'%3E%3Cpath d='M2 9 Q 30 3, 60 8 T 120 7 T 198 9' stroke='%234A6FA5' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14'%3E%3Cpath d='M2 9 Q 30 3, 60 8 T 120 7 T 198 9' stroke='%23D45040' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
         background-repeat: no-repeat; background-position: bottom left; background-size: 100% 12px; padding-bottom: 8px; display: inline-block;
       }
       .dark .sketch-underline {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14'%3E%3Cpath d='M2 9 Q 30 3, 60 8 T 120 7 T 198 9' stroke='%236E93C9' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14'%3E%3Cpath d='M2 9 Q 30 3, 60 8 T 120 7 T 198 9' stroke='%23E37A6A' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
       }
 
       /* ── THEME TOGGLE ──────────────────────────────────────────────────── */
@@ -113,8 +126,6 @@
       .cell-hover:hover { background: var(--surface-2); }
       .hover-danger:hover { color: var(--danger) !important; }
       .hover-accent:hover { color: var(--accent) !important; }
-      .btn-disconnect { background: var(--surface-2); border: 2px solid var(--border-strong); color: var(--text2); border-radius: 12px; font-weight: 500; transition: all .15s; }
-      .btn-disconnect:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
       .card { --card: var(--surface); }
 
       .recipient-row { display: flex; gap: 8px; align-items: center; }
@@ -122,11 +133,16 @@
     </style>
   </head>
   <body>
-    <!-- Hidden SVG filter for hand-tremor wobble on small decorative marks only (never on text-bearing elements) -->
+    <div class="notebook-margin"></div>
+    <!-- Hidden SVG filters: fine wobble for buttons/icons, coarser wobble for card frames. Never applied to text-bearing elements. -->
     <svg width="0" height="0" style="position:absolute">
       <filter id="sketchy" x="-20%" y="-20%" width="140%" height="140%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="2" seed="4" result="noise"/>
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.6"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="4" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.2"/>
+      </filter>
+      <filter id="sketchy-lg" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.010" numOctaves="2" seed="9" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="6"/>
       </filter>
     </svg>
 
@@ -159,12 +175,16 @@
             <div id="walletStatus"></div>
             <div id="networkBadge" class="hidden text-xs font-mono t3">Arc Testnet</div>
           </div>
-          <button id="connectBtn" class="btn-primary px-4 py-2.5 text-sm whitespace-nowrap">Connect Wallet</button>
+          <button id="connectBtn" class="btn-primary px-4 py-2.5 text-sm whitespace-nowrap">
+            <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>
+            <span id="connectBtnLabel">Connect Wallet</span>
+          </button>
         </div>
       </div>
 
       <!-- Send Card (single) -->
       <div class="card p-6 mb-6" style="transform:rotate(-0.3deg)">
+        <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
         <div class="flex items-center justify-between mb-5">
           <div class="sec-head">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9 22 2Z"/></svg>
@@ -198,8 +218,10 @@
             <div id="savedCategoriesList" class="flex flex-wrap gap-2 mb-2"></div>
             <div class="flex gap-2">
               <input id="newCategoryInput" type="text" placeholder="New category name..." class="inp flex-1 px-3 py-2 text-sm">
-              <input id="newCategoryColor" type="color" value="#4A6FA5" class="w-10 h-10 rounded-xl border bdr bg-transparent cursor-pointer p-1 shrink-0">
-              <button id="addCategoryBtn" class="btn-secondary px-4 py-2 text-sm whitespace-nowrap">+ Add</button>
+              <input id="newCategoryColor" type="color" value="#C47D5A" class="w-10 h-10 rounded-xl border bdr bg-transparent cursor-pointer p-1 shrink-0">
+              <button id="addCategoryBtn" class="btn-secondary px-4 py-2 text-sm whitespace-nowrap">
+                <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>+ Add
+              </button>
             </div>
           </div>
           <div>
@@ -207,11 +229,15 @@
             <textarea id="memo" rows="2" placeholder="Add a note..." class="memo-box font-hand w-full px-4 py-3 resize-none"></textarea>
           </div>
         </div>
-        <button id="sendBtn" class="btn-primary mt-5 w-full py-3 text-sm">Send with Memo →</button>
+        <button id="sendBtn" class="btn-primary mt-5 w-full py-3 text-sm">
+          <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>
+          <span id="sendBtnLabel">Send with Memo →</span>
+        </button>
       </div>
 
       <!-- Multi-send Card -->
       <div id="multiSendCard" class="card p-6 mb-6 hidden" style="transform:rotate(0.3deg)">
+        <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
         <div class="flex items-center justify-between mb-5">
           <div class="sec-head">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
@@ -225,7 +251,9 @@
             <label class="text-xs t3 font-medium uppercase tracking-wider">Recipients</label>
             <div class="flex gap-2">
               <button id="addFromContactsBtn" class="btn-ghost text-xs px-3 py-1">+ From contacts</button>
-              <button id="addRecipientRowBtn" class="btn-secondary text-xs px-3 py-1">+ Add address</button>
+              <button id="addRecipientRowBtn" class="btn-secondary text-xs px-3 py-1">
+                <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="7"/></svg>+ Add address
+              </button>
             </div>
           </div>
           <div id="multiRecipientList" class="space-y-2"></div>
@@ -259,6 +287,7 @@
         </div>
 
         <button id="multiSendBtn" class="btn-primary w-full py-3 text-sm inline-flex items-center justify-center gap-2">
+          <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
           <span id="multiSendBtnLabel">Send to All →</span>
         </button>
@@ -270,6 +299,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <!-- Contacts -->
         <div class="card p-5" style="transform:rotate(0.4deg)">
+          <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
           <div class="sec-head mb-4">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <h2>Contacts</h2>
@@ -277,13 +307,16 @@
           <div class="space-y-2 mb-3">
             <input id="contactName" type="text" placeholder="Name" class="inp w-full px-4 py-2 text-sm">
             <input id="contactAddress" type="text" placeholder="0x..." class="inp font-mono w-full px-4 py-2 text-sm">
-            <button id="addContactBtn" class="btn-secondary w-full py-2 text-sm">+ Add Contact</button>
+            <button id="addContactBtn" class="btn-secondary w-full py-2 text-sm">
+              <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>+ Add Contact
+            </button>
           </div>
           <div id="contactsList" class="space-y-1.5 max-h-52 overflow-y-auto"></div>
         </div>
 
         <!-- Inline Calendar -->
         <div class="card p-5" style="transform:rotate(-0.4deg)">
+          <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
           <div class="flex items-center justify-between mb-3">
             <div class="sec-head">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -320,7 +353,9 @@
                   <option value="custom">Custom</option>
                   <option value="payment">Transfer</option>
                 </select>
-                <button id="miniSaveEventBtn" class="btn-primary px-3 py-1.5 text-xs shrink-0">+</button>
+                <button id="miniSaveEventBtn" class="btn-primary px-3 py-1.5 text-xs shrink-0">
+                  <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="6"/></svg>+
+                </button>
               </div>
               <div id="miniCustomFields" class="hidden">
                 <input id="miniCustomLabel" type="text" placeholder="Custom event name..." class="inp w-full px-3 py-1.5 text-xs">
@@ -339,6 +374,7 @@
 
       <!-- Scheduled Payments -->
       <div class="card p-5 mb-6" style="transform:rotate(0.25deg)">
+        <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
         <div class="flex items-center justify-between mb-4">
           <div class="sec-head">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
@@ -377,7 +413,9 @@
             <input id="schedMemo" type="text" placeholder="e.g. Monthly rent..." class="memo-box font-hand w-full px-3 py-2.5">
           </div>
           <div class="flex gap-2">
-            <button id="saveScheduleBtn" class="btn-primary flex-1 py-2 text-sm">Save Schedule</button>
+            <button id="saveScheduleBtn" class="btn-primary flex-1 py-2 text-sm">
+              <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>Save Schedule
+            </button>
             <button id="cancelScheduleBtn" class="btn-ghost px-4 py-2 text-sm">Cancel</button>
           </div>
         </div>
@@ -386,6 +424,7 @@
 
       <!-- Swap Card -->
       <div class="card p-6 mb-6" style="transform:rotate(-0.3deg)">
+        <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
         <div class="flex items-center gap-2 mb-5">
           <div class="sec-head">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
@@ -438,12 +477,16 @@
         </div>
 
         <div id="swapRateInfo" class="text-xs t3 font-mono text-center mt-3"></div>
-        <button id="swapBtn" class="btn-primary mt-3 w-full py-3 text-sm">Swap →</button>
+        <button id="swapBtn" class="btn-primary mt-3 w-full py-3 text-sm">
+          <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>
+          <span id="swapBtnLabel">Swap →</span>
+        </button>
         <div id="swapStatus" class="hidden mt-3 text-xs t3 text-center"></div>
       </div>
 
       <!-- History -->
       <div class="card p-5 mb-8" style="transform:rotate(0.2deg)">
+        <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
         <div class="flex items-center justify-between mb-4">
           <div class="sec-head">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -482,7 +525,8 @@
 
     <!-- Full Calendar Modal -->
     <div id="calendarModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="rounded-3xl w-full max-w-lg border-2" style="background:var(--surface);border-color:var(--border-strong);box-shadow:4px 5px 0 var(--border)">
+      <div class="relative rounded-3xl w-full max-w-lg border-2" style="background:var(--surface);border-color:var(--border-strong)">
+        <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="22"/></svg>
         <div class="flex justify-between items-center p-5 border-b-2 bdr" style="border-style:dashed">
           <button id="modalPrevMonth" class="icon-btn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
           <h3 id="modalCalendarTitle" class="font-hand2 text-lg"></h3>
@@ -516,8 +560,10 @@
                   <option value="custom">Custom</option>
                   <option value="payment">Transfer</option>
                 </select>
-                <input id="modalEventColor" type="color" value="#4A6FA5" class="w-10 h-9 rounded-xl border bdr bg-transparent cursor-pointer p-1">
-                <button id="modalSaveEventBtn" class="btn-primary px-4 py-2 text-xs">Save</button>
+                <input id="modalEventColor" type="color" value="#C47D5A" class="w-10 h-9 rounded-xl border bdr bg-transparent cursor-pointer p-1">
+                <button id="modalSaveEventBtn" class="btn-primary px-4 py-2 text-xs">
+                  <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="7"/></svg>Save
+                </button>
               </div>
               <div id="modalCustomFields" class="hidden">
                 <input id="modalCustomLabel" type="text" placeholder="Custom event name..." class="inp w-full px-3 py-2 text-xs" style="background:var(--surface)">
@@ -533,7 +579,9 @@
           </div>
         </div>
         <div class="px-5 pb-5">
-          <button id="closeCalendar" class="btn-secondary w-full py-2.5 text-sm">Close</button>
+          <button id="closeCalendar" class="btn-secondary w-full py-2.5 text-sm">
+            <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="10"/></svg>Close
+          </button>
         </div>
       </div>
     </div>
