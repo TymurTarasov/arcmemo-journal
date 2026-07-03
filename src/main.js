@@ -16,7 +16,7 @@ const ERC20_ABI = [
     outputs: [{ name: "", type: "uint256" }] },
 ];
 
-const DEFAULT_COLORS = { Payment:"#6B7CFF", Gift:"#D9A441", Work:"#4C9CB0", Other:"#8A8A93" };
+const DEFAULT_COLORS = { Payment:"#4A6FA5", Gift:"#C47D5A", Work:"#7D8C64", Other:"#9E9588" };
 const ICON_EDIT = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>';
 const ICON_X = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 const ICON_EXTLINK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
@@ -30,7 +30,7 @@ const TYPE_ICONS = {
   custom: ICON_EDIT,
   payment: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
 };
-const TYPE_COLORS = { note:"var(--memo-text2)", event:"#E08A3C", holiday:"#E0669B", custom:"#9F7AE0", payment:"#4FB0A6" };
+const TYPE_COLORS = { note:"#8A7526", event:"#C47D5A", holiday:"#E8927C", custom:"#4A6FA5", payment:"#7D8C64" };
 
 const $ = id => document.getElementById(id);
 
@@ -256,7 +256,7 @@ $("multiSendBtn").onclick = async () => {
 function getCategoryColor(name) {
   if (DEFAULT_COLORS[name]) return DEFAULT_COLORS[name];
   const c = allCategories.find(c => c.name === name);
-  return c ? (c.color || "#6b7280") : "#6b7280";
+  return c ? (c.color || "#9E9588") : "#9E9588";
 }
 function updateCategorySelect() {
   const sel = $("category"), cur = sel.value;
@@ -266,7 +266,7 @@ function updateCategorySelect() {
     { name:"Gift", color:DEFAULT_COLORS.Gift },
     { name:"Work", color:DEFAULT_COLORS.Work },
     { name:"Other", color:DEFAULT_COLORS.Other },
-    ...allCategories.map(c => ({ name:c.name, color:c.color||"#6b7280" }))
+    ...allCategories.map(c => ({ name:c.name, color:c.color||"#9E9588" }))
   ];
   all.forEach(({ name, color }) => {
     const o = document.createElement("option");
@@ -291,9 +291,9 @@ function renderSavedCategories() {
   const el = $("savedCategoriesList");
   if (!allCategories.length) { el.innerHTML = '<span class="text-xs t3">No custom categories yet</span>'; return; }
   el.innerHTML = allCategories.map(c =>
-    '<div class="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 border group" style="background:' + (c.color||"#6366f1") + '22;border-color:' + (c.color||"#6366f1") + '55">' +
-    '<span class="w-2 h-2 rounded-full shrink-0" style="background:' + (c.color||"#6366f1") + '"></span>' +
-    '<button onclick="selectCategory(\'' + c.name + '\')" class="text-xs font-medium transition" style="color:' + (c.color||"#6366f1") + '">' + c.name + '</button>' +
+    '<div class="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 border group" style="background:' + (c.color||"#4A6FA5") + '22;border-color:' + (c.color||"#4A6FA5") + '55">' +
+    '<span class="w-2 h-2 rounded-full shrink-0" style="background:' + (c.color||"#4A6FA5") + '"></span>' +
+    '<button onclick="selectCategory(\'' + c.name + '\')" class="text-xs font-medium transition" style="color:' + (c.color||"#4A6FA5") + '">' + c.name + '</button>' +
     '<button onclick="renameCategory(' + c.id + ',\'' + c.name + '\')" class="t3 hover-accent text-xs ml-1 transition">'+ICON_EDIT+'</button>' +
     '<button onclick="deleteCategoryById(' + c.id + ')" class="t3 hover-danger text-xs transition">'+ICON_X+'</button>' +
     '</div>'
@@ -604,7 +604,7 @@ $("miniSaveEventBtn").onclick=async()=>{
   }else{
     const title=type==="custom"?$("miniCustomLabel").value.trim():$("miniEventTitle").value.trim();
     if(!title){showToast("Enter a title","error");return;}
-    const color=TYPE_COLORS[type]||"#6366f1";
+    const color=TYPE_COLORS[type]||"#4A6FA5";
     const dateKey=getDateKey(selectedMiniDay.y,selectedMiniDay.m,selectedMiniDay.d);
     const{error}=await supabase.from("calendar_events").insert({wallet:account.toLowerCase(),date:dateKey,title,type,color});
     if(error){showToast("Error: "+error.message,"error");return;}
@@ -685,7 +685,7 @@ $("calendarBtn").onclick=()=>{$("calendarModal").classList.remove("hidden");rend
 $("closeCalendar").onclick=()=>$("calendarModal").classList.add("hidden");
 $("modalPrevMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()-1);renderModalCalendar();renderCalendar();};
 $("modalNextMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()+1);renderModalCalendar();renderCalendar();};
-$("modalEventType").addEventListener("change",()=>{const t=$("modalEventType").value;$("modalPaymentFields").classList.toggle("hidden",t!=="payment");$("modalCustomFields").classList.toggle("hidden",t!=="custom");$("modalEventColor").value=TYPE_COLORS[t]||"#6366f1";});
+$("modalEventType").addEventListener("change",()=>{const t=$("modalEventType").value;$("modalPaymentFields").classList.toggle("hidden",t!=="payment");$("modalCustomFields").classList.toggle("hidden",t!=="custom");$("modalEventColor").value=TYPE_COLORS[t]||"#4A6FA5";});
 $("modalPickContactBtn").onclick=()=>{if(!allContacts.length){showToast("No contacts yet","info");return;}openContactPicker((address,name)=>{$("modalPayRecipient").value=address;showToast("Selected: "+name,"info");});};
 $("modalSaveEventBtn").onclick=async()=>{
   if(!account){showToast("Connect wallet first!","error");return;}
