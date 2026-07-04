@@ -6,191 +6,120 @@
     <title>MemoJournal • USDC Payment Journal on Arc</title>
     <link rel="stylesheet" href="/src/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Indie+Flower&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-      /* ── HUMAN SCRIBBLE TOKENS ────────────────────────────────── */
       .dark {
-        --bg: #1C1712; --surface: #241E17; --surface-2: #2C251C;
-        --border: #4A3D2C; --border-strong: #5C4B34; --rule: rgba(240,230,210,0.07);
-        --text: #F0E6D2; --text2: #C9BCA0; --text3: #8A7D68;
-        --accent: #6E93C9; --accent-hover: #86A8DA; --accent-soft: rgba(110,147,201,0.16); --on-accent: #14202E;
-        --success: #9DAD82; --success-soft: rgba(157,173,130,0.14);
-        --danger: #E37A6A; --danger-soft: rgba(227,122,106,0.14);
-        --memo-bg: #3A3016; --memo-border: #5C4A22; --memo-text: #F0E0A0; --memo-text2: #C9AE6E;
-        --sienna: #C4835A; --sienna-hover: #B06F47; --coral: #EDA890;
+        --bg: #0a0a0f; --card: rgba(24,24,27,0.6); --border: rgba(63,63,70,0.8);
+        --text: #ffffff; --text2: #a1a1aa; --text3: #52525b;
+        --input-bg: rgba(9,9,15,0.8); --input-border: #3f3f46;
+        --btn-bg: #27272a; --btn-hover: #3f3f46; --btn-text: #d4d4d8;
+        --rule-line: rgba(255,255,255,0.035);
       }
       .light {
-        --bg: #FBF7F0; --surface: #FBF8F1; --surface-2: #EDE3D2;
-        --border: #DCCDAE; --border-strong: #C4A97D; --rule: rgba(74,60,30,0.09);
-        --text: #2A2520; --text2: #4A4540; --text3: #9E9588;
-        --accent: #4A6FA5; --accent-hover: #3A5A88; --accent-soft: rgba(74,111,165,0.10); --on-accent: #FFFFFF;
-        --success: #7D8C64; --success-soft: rgba(125,140,100,0.12);
-        --danger: #D45040; --danger-soft: rgba(212,80,64,0.10);
-        --memo-bg: #FFF3B0; --memo-border: #E8D077; --memo-text: #4A3D1A; --memo-text2: #8A7526;
-        --sienna: #C47D5A; --sienna-hover: #B06844; --coral: #E8927C;
+        --bg: #f1f5f9; --card: rgba(255,255,255,0.98); --border: #e2e8f0;
+        --text: #0f172a; --text2: #475569; --text3: #94a3b8;
+        --input-bg: #ffffff; --input-border: #cbd5e1;
+        --btn-bg: #f1f5f9; --btn-hover: #e2e8f0; --btn-text: #334155;
+        --rule-line: rgba(15,23,42,0.055);
       }
       * { box-sizing: border-box; }
-      html, body { background: var(--bg); }
       body {
+        background-color: var(--bg);
+        background-image: repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--rule-line) 28px);
         color: var(--text); font-family: 'Inter',sans-serif; transition: background 0.3s, color 0.3s; min-height: 100vh;
-        -webkit-font-smoothing: antialiased; position: relative;
-        background-image: repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--rule) 28px);
       }
-      .notebook-margin { position: fixed; top: 0; bottom: 0; left: 26px; width: 1.5px; background: var(--danger); opacity: 0.4; z-index: 0; pointer-events: none; }
-      .font-mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-      .font-hand { font-family: 'Caveat', cursive; }
-      .font-hand2 { font-family: 'Patrick Hand', cursive; }
-      .font-doodle { font-family: 'Indie Flower', cursive; }
-
-      /* ── CARD: real hand-drawn SVG wobble border ─────────────────────────── */
-      .card { position: relative; background: var(--surface); border-radius: 16px; }
-      .hand-frame { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; overflow: visible; }
-      .hand-frame rect { fill: none; stroke: var(--text); stroke-width: 2.5; filter: url(#sketchy-lg); }
-
-      .inp { background: var(--surface-2); border: 1.5px solid var(--border); color: var(--text); border-radius: 8px; }
+      .card { background: var(--card); border-color: var(--border); backdrop-filter: blur(12px); }
+      .inp { background: var(--input-bg); border-color: var(--input-border); color: var(--text); }
       .inp::placeholder { color: var(--text3); }
-      .inp:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+      .inp:focus { outline: none; border-color: #6366f1; }
       .t2 { color: var(--text2); }
       .t3 { color: var(--text3); }
       .bdr { border-color: var(--border); }
-
-      /* ── BUTTONS: exact ref style — outline default / solid accent, hand-drawn border ── */
-      .btn-primary, .btn-secondary, .btn-ghost, .btn-accent-tint, .btn-disconnect {
-        position: relative; border: none; border-radius: 8px; font-weight: 500; transition: transform .12s;
+      .btn-s { background: var(--btn-bg); border-color: var(--border); color: var(--btn-text); }
+      .btn-s:hover { background: var(--btn-hover); }
+      .light .bg-zinc-800\/40 { background: rgba(226,232,240,0.5) !important; }
+      .light .bg-zinc-800\/30 { background: rgba(241,245,249,0.8) !important; }
+      .light .bg-zinc-800\/60 { background: rgba(226,232,240,0.6) !important; }
+      .light .bg-zinc-800 { background: #e2e8f0 !important; }
+      .light .hover\:bg-zinc-700:hover { background: #cbd5e1 !important; }
+      .light .hover\:bg-zinc-800:hover { background: #e2e8f0 !important; }
+      .light .bg-zinc-950\/80 { background: #ffffff !important; }
+      .light .border-zinc-800 { border-color: #e2e8f0 !important; }
+      .light .border-zinc-700 { border-color: #cbd5e1 !important; }
+      .light .text-zinc-400 { color: #64748b !important; }
+      .light .text-zinc-500 { color: #94a3b8 !important; }
+      .light .text-zinc-600 { color: #94a3b8 !important; }
+      .light .text-zinc-300 { color: #334155 !important; }
+      .light .text-zinc-200 { color: #1e293b !important; }
+      .light .bg-zinc-900 { background: #ffffff !important; }
+      .light select option { background: #ffffff; color: #0f172a; }
+      .theme-track {
+        width: 40px; height: 22px; border-radius: 11px; position: relative;
+        cursor: pointer; border: none; padding: 0; transition: background 0.3s; flex-shrink: 0;
       }
-      .btn-primary:hover, .btn-secondary:hover, .btn-ghost:hover, .btn-accent-tint:hover, .btn-disconnect:hover { transform: translateY(-2px); }
-      .btn-primary:active, .btn-secondary:active, .btn-ghost:active, .btn-accent-tint:active, .btn-disconnect:active { transform: translateY(1px); }
-      .btn-primary { background: var(--sienna); color: #fff; font-weight: 600; }
-      .btn-primary:hover { background: var(--sienna-hover); }
-      .btn-primary:disabled { opacity: .5; cursor: default; transform: none; }
-      .btn-secondary { background: var(--surface); color: var(--text); }
-      .btn-ghost { background: transparent; color: var(--text2); }
-      .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
-      .btn-accent-tint { background: var(--accent-soft); color: var(--accent); }
-      .btn-accent-tint:hover { background: var(--accent); color: var(--on-accent); }
-      .btn-disconnect { background: var(--surface); color: var(--text2); }
-      .btn-disconnect:hover { background: var(--danger-soft); color: var(--danger); }
-      .hand-frame-btn { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; overflow: visible; }
-      .hand-frame-btn rect { fill: none; stroke: var(--text); stroke-width: 2; filter: url(#sketchy); }
-      .btn-primary .hand-frame-btn rect { stroke: rgba(255,255,255,0.55); }
-
-      .icon-btn { position: relative; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text3); transition: all .15s; flex-shrink: 0; }
-      .icon-btn:hover { background: var(--surface-2); color: var(--text); }
-      .icon { width: 16px; height: 16px; stroke-width: 1.75; }
-
-      /* ── SECTION HEADER ────────────────────────────────────────────────── */
-      .sec-head { display: flex; align-items: center; gap: 8px; color: var(--text3); }
-      .sec-head svg { width: 18px; height: 18px; stroke-width: 1.75; filter: url(#sketchy); }
-      .sec-head h2 { color: var(--text); font-family: 'Patrick Hand', cursive; font-size: 20px; font-weight: 400; letter-spacing: 0.01em; }
-
-      /* ── MEMO / STICKY NOTE ────────────────────────────────────────────── */
-      .memo-box {
-        background: var(--memo-bg); border: 2px solid var(--memo-border); color: var(--memo-text);
-        border-radius: 3px 14px 6px 16px/14px 4px 18px 6px; transform: rotate(-1deg);
-        box-shadow: 2px 4px 8px rgba(0,0,0,0.18); position: relative;
+      .dark .theme-track { background: #4338ca; }
+      .light .theme-track { background: #f59e0b; }
+      .theme-track::after {
+        content: ''; position: absolute; width: 16px; height: 16px;
+        border-radius: 50%; top: 3px; background: white;
+        transition: left 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       }
-      .memo-box::before {
-        content:''; position:absolute; top:-9px; left:calc(50% - 26px); width:52px; height:18px;
-        background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.55); transform: rotate(-3deg);
-      }
-      .memo-box:focus-within { transform: rotate(0deg); border-color: var(--memo-text2); }
-      .memo-text { font-family: 'Caveat', cursive; color: var(--memo-text2); font-size: 18px; line-height: 1.25; }
-
-      .sketch-underline {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14'%3E%3Cpath d='M2 9 Q 30 3, 60 8 T 120 7 T 198 9' stroke='%23D45040' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-        background-repeat: no-repeat; background-position: bottom left; background-size: 100% 12px; padding-bottom: 8px; display: inline-block;
-      }
-      .dark .sketch-underline {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14'%3E%3Cpath d='M2 9 Q 30 3, 60 8 T 120 7 T 198 9' stroke='%23E37A6A' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-      }
-
-      /* ── THEME TOGGLE ──────────────────────────────────────────────────── */
-      .theme-track { width: 40px; height: 22px; border-radius: 11px; position: relative; cursor: pointer; border: 1.5px solid var(--border-strong); padding: 0; transition: background 0.3s; flex-shrink: 0; }
-      .dark .theme-track { background: var(--accent); }
-      .light .theme-track { background: var(--border); }
-      .theme-track::after { content: ''; position: absolute; width: 15px; height: 15px; border-radius: 50%; top: 2px; background: var(--surface); transition: left 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+      /* Dark theme -> knob sits near the moon icon (right side) */
       .dark .theme-track::after { left: 21px; }
-      .light .theme-track::after { left: 2px; }
-
-      .badge { font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 500; }
-      .badge-doodle { font-family: 'Indie Flower', cursive; font-size: 13px; }
-      .spinner { width: 12px; height: 12px; border: 2px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; display:inline-block; }
-      @keyframes spin { to { transform: rotate(360deg); } }
-
-      .avatar-tint { background: var(--accent-soft); color: var(--accent); }
-      .amount-accent { color: var(--accent); }
-      .today-cell { box-shadow: 0 0 0 2px var(--accent) inset; background: var(--accent-soft); color: var(--accent); }
-      .dot-accent { background: var(--accent); }
-      .row-hover:hover { background: var(--surface-2); }
-      .cell-hover:hover { background: var(--surface-2); }
-      .hover-danger:hover { color: var(--danger) !important; }
-      .hover-accent:hover { color: var(--accent) !important; }
-      .card { --card: var(--surface); }
-
+      /* Light theme -> knob sits near the sun icon (left side) */
+      .light .theme-track::after { left: 3px; }
+      /* Multi-send recipient row */
       .recipient-row { display: flex; gap: 8px; align-items: center; }
       .recipient-row:not(:last-child) { margin-bottom: 8px; }
     </style>
   </head>
   <body>
-    <div class="notebook-margin"></div>
-    <!-- Hidden SVG filters: fine wobble for buttons/icons, coarser wobble for card frames. Never applied to text-bearing elements. -->
-    <svg width="0" height="0" style="position:absolute">
-      <filter id="sketchy" x="-20%" y="-20%" width="140%" height="140%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="4" result="noise"/>
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.2"/>
-      </filter>
-      <filter id="sketchy-lg" x="-10%" y="-10%" width="120%" height="120%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.010" numOctaves="2" seed="9" result="noise"/>
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="6"/>
-      </filter>
-    </svg>
+    <div class="fixed inset-0 pointer-events-none overflow-hidden">
+      <div class="absolute top-[-20%] left-[30%] w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px]"></div>
+      <div class="absolute bottom-[-10%] right-[20%] w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]"></div>
+    </div>
 
-    <div class="relative max-w-3xl mx-auto px-5 py-8" style="z-index:1">
+    <div class="relative max-w-3xl mx-auto px-5 py-8">
 
       <!-- Header -->
       <div class="flex items-center justify-between mb-10">
         <div class="flex items-center gap-3">
-          <img src="/logo.png" alt="MemoJournal" class="w-11 h-11 rounded-2xl" style="transform:rotate(-2deg);border:2px solid var(--border-strong)">
+          <img src="/logo.png" alt="MemoJournal" class="w-12 h-12 rounded-2xl">
           <div>
             <div class="flex items-center gap-2">
-              <span class="font-hand2 text-2xl" style="color:var(--text)">MemoJournal</span>
-              <span class="badge" style="background:var(--surface-2);color:var(--text3);border:1px solid var(--border)">DEMO</span>
+              <span class="text-xl font-bold tracking-tight">MemoJournal</span>
+              <span class="text-xs px-1.5 py-0.5 bg-zinc-800/80 text-zinc-500 rounded-md border border-zinc-700/50 font-mono tracking-wider">DEMO</span>
             </div>
-            <div class="font-hand text-lg leading-none mt-0.5 sketch-underline" style="color:var(--text3)">Send USDC. Remember why.</div>
+            <div class="text-xs t3 tracking-wider mt-0.5">Send USDC. Remember why.</div>
           </div>
         </div>
 
         <div class="flex items-center gap-2">
           <!-- Theme toggle -->
-          <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl border bdr" style="background:var(--surface)">
+          <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl btn-s border">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="t3 shrink-0"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
             <button id="themeToggle" class="theme-track" title="Toggle theme"></button>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="t3 shrink-0"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </div>
           <!-- Balance -->
-          <div id="balanceDisplay" class="hidden font-mono text-sm font-medium px-3 py-2 rounded-2xl whitespace-nowrap" style="color:var(--accent);background:var(--accent-soft);border:1.5px dashed var(--accent)"></div>
+          <div id="balanceDisplay" class="hidden text-sm font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-2xl whitespace-nowrap"></div>
           <!-- Wallet + network -->
           <div class="flex flex-col items-end leading-tight">
             <div id="walletStatus"></div>
-            <div id="networkBadge" class="hidden text-xs font-mono t3">Arc Testnet</div>
+            <div id="networkBadge" class="hidden text-xs text-zinc-500 font-mono">Arc Testnet</div>
           </div>
-          <button id="connectBtn" class="btn-primary px-4 py-2.5 text-sm whitespace-nowrap">
-            <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>
-            <span id="connectBtnLabel">Connect Wallet</span>
-          </button>
+          <button id="connectBtn" class="px-4 py-2.5 bg-white text-black text-sm font-medium rounded-2xl hover:bg-zinc-100 transition whitespace-nowrap">Connect Wallet</button>
         </div>
       </div>
 
       <!-- Send Card (single) -->
-      <div class="card p-6 mb-6" style="transform:rotate(-0.3deg)">
-        <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
+      <div class="card border rounded-3xl p-6 mb-5">
         <div class="flex items-center justify-between mb-5">
-          <div class="sec-head">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9 22 2Z"/></svg>
-            <h2>Send USDC</h2>
+          <div class="flex items-center gap-2">
+            <div class="w-1.5 h-5 bg-emerald-500 rounded-full"></div>
+            <h2 class="text-base font-semibold">Send USDC</h2>
           </div>
-          <button id="switchToMultiBtn" class="btn-accent-tint text-xs px-3 py-1.5 inline-flex items-center gap-1.5">
+          <button id="switchToMultiBtn" class="text-xs px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 rounded-xl transition inline-flex items-center gap-1.5">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
             Multi-send
           </button>
@@ -199,61 +128,54 @@
           <div>
             <div class="flex justify-between items-center mb-1.5">
               <label class="text-xs t3 font-medium uppercase tracking-wider">Recipient</label>
-              <button id="chooseContactBtn" class="btn-ghost text-xs px-3 py-1">From contacts</button>
+              <button id="chooseContactBtn" class="text-xs px-3 py-1 btn-s border rounded-xl transition">From contacts</button>
             </div>
-            <input id="recipient" type="text" placeholder="0x..." class="inp font-mono w-full px-4 py-2.5 text-sm">
+            <input id="recipient" type="text" placeholder="0x..." class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Amount (USDC)</label>
-              <input id="amount" type="number" value="1" step="0.01" class="inp font-mono w-full px-4 py-2.5 text-sm">
+              <input id="amount" type="number" value="1" step="0.01" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
             </div>
             <div>
               <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Category</label>
-              <select id="category" class="inp w-full px-4 py-2.5 text-sm font-medium"></select>
+              <select id="category" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm font-medium"></select>
             </div>
           </div>
           <div id="savedCategoriesBar" class="hidden">
             <label class="text-xs t3 font-medium uppercase tracking-wider block mb-2">Your categories</label>
             <div id="savedCategoriesList" class="flex flex-wrap gap-2 mb-2"></div>
             <div class="flex gap-2">
-              <input id="newCategoryInput" type="text" placeholder="New category name..." class="inp flex-1 px-3 py-2 text-sm">
-              <input id="newCategoryColor" type="color" value="#C47D5A" class="w-10 h-10 rounded-xl border bdr bg-transparent cursor-pointer p-1 shrink-0">
-              <button id="addCategoryBtn" class="btn-secondary px-4 py-2 text-sm whitespace-nowrap">
-                <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>+ Add
-              </button>
+              <input id="newCategoryInput" type="text" placeholder="New category name..." class="inp flex-1 border rounded-xl px-3 py-2 text-sm">
+              <input id="newCategoryColor" type="color" value="#6366f1" class="w-10 h-10 rounded-xl border bdr bg-transparent cursor-pointer p-1 shrink-0">
+              <button id="addCategoryBtn" class="px-4 py-2 btn-s border rounded-xl text-sm transition whitespace-nowrap">+ Add</button>
             </div>
           </div>
           <div>
             <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Memo</label>
-            <textarea id="memo" rows="2" placeholder="Add a note..." class="memo-box font-hand w-full px-4 py-3 resize-none"></textarea>
+            <textarea id="memo" rows="2" placeholder="Add a note..." class="inp w-full border rounded-2xl px-4 py-2.5 text-sm resize-none"></textarea>
           </div>
         </div>
-        <button id="sendBtn" class="btn-primary mt-5 w-full py-3 text-sm">
-          <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>
-          <span id="sendBtnLabel">Send with Memo →</span>
-        </button>
+        <button id="sendBtn" class="mt-5 w-full bg-emerald-500 hover:bg-emerald-400 transition text-black font-semibold py-3 rounded-2xl text-sm">Send with Memo →</button>
       </div>
 
       <!-- Multi-send Card -->
-      <div id="multiSendCard" class="card p-6 mb-6 hidden" style="transform:rotate(0.3deg)">
-        <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
+      <div id="multiSendCard" class="card border border-emerald-500/20 rounded-3xl p-6 mb-5 hidden">
         <div class="flex items-center justify-between mb-5">
-          <div class="sec-head">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-            <h2>Multi-Send USDC</h2>
+          <div class="flex items-center gap-2">
+            <div class="w-1.5 h-5 bg-emerald-500 rounded-full"></div>
+            <h2 class="text-base font-semibold">Multi-Send USDC</h2>
+            <span class="text-xs px-2 py-0.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-lg">NEW</span>
           </div>
-          <button id="switchToSingleBtn" class="btn-ghost text-xs px-3 py-1.5">← Single send</button>
+          <button id="switchToSingleBtn" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">← Single send</button>
         </div>
 
         <div class="mb-4">
           <div class="flex justify-between items-center mb-2">
             <label class="text-xs t3 font-medium uppercase tracking-wider">Recipients</label>
             <div class="flex gap-2">
-              <button id="addFromContactsBtn" class="btn-ghost text-xs px-3 py-1">+ From contacts</button>
-              <button id="addRecipientRowBtn" class="btn-secondary text-xs px-3 py-1">
-                <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="7"/></svg>+ Add address
-              </button>
+              <button id="addFromContactsBtn" class="text-xs px-3 py-1 btn-s border rounded-xl transition">+ From contacts</button>
+              <button id="addRecipientRowBtn" class="text-xs px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 border border-zinc-600 rounded-xl transition">+ Add address</button>
             </div>
           </div>
           <div id="multiRecipientList" class="space-y-2"></div>
@@ -262,32 +184,31 @@
         <div class="grid grid-cols-2 gap-3 mb-3">
           <div>
             <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Amount each (USDC)</label>
-            <input id="multiAmount" type="number" value="1" step="0.01" class="inp font-mono w-full px-4 py-2.5 text-sm">
+            <input id="multiAmount" type="number" value="1" step="0.01" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
           </div>
           <div>
             <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Category</label>
-            <select id="multiCategory" class="inp w-full px-4 py-2.5 text-sm font-medium"></select>
+            <select id="multiCategory" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm font-medium"></select>
           </div>
         </div>
         <div class="mb-3">
           <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Memo (same for all)</label>
-          <input id="multiMemo" type="text" placeholder="e.g. Team payment, Airdrop..." class="memo-box font-hand w-full px-4 py-3">
+          <input id="multiMemo" type="text" placeholder="e.g. Team payment, Airdrop..." class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
         </div>
 
         <!-- Summary -->
-        <div id="multiSummary" class="hidden mb-4 p-3 rounded-2xl border-2" style="background:var(--accent-soft);border-color:var(--accent);border-style:dashed">
+        <div id="multiSummary" class="hidden mb-4 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl">
           <div class="flex justify-between text-sm">
-            <span class="t2">Recipients:</span>
+            <span class="t3">Recipients:</span>
             <span id="multiCount" class="font-semibold">0</span>
           </div>
-          <div class="flex justify-between text-sm mt-1 font-mono">
-            <span class="t2 font-sans">Total:</span>
-            <span id="multiTotal" class="font-semibold" style="color:var(--accent)">0 USDC</span>
+          <div class="flex justify-between text-sm mt-1">
+            <span class="t3">Total:</span>
+            <span id="multiTotal" class="font-semibold text-emerald-400">0 USDC</span>
           </div>
         </div>
 
-        <button id="multiSendBtn" class="btn-primary w-full py-3 text-sm inline-flex items-center justify-center gap-2">
-          <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>
+        <button id="multiSendBtn" class="w-full bg-emerald-500 hover:bg-emerald-400 transition text-black font-semibold py-3 rounded-2xl text-sm inline-flex items-center justify-center gap-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
           <span id="multiSendBtnLabel">Send to All →</span>
         </button>
@@ -296,76 +217,70 @@
       </div>
 
       <!-- Contacts + Calendar -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
         <!-- Contacts -->
-        <div class="card p-5" style="transform:rotate(0.4deg)">
-          <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
-          <div class="sec-head mb-4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <h2>Contacts</h2>
+        <div class="card border rounded-3xl p-5">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-1.5 h-5 bg-blue-500 rounded-full"></div>
+            <h2 class="text-base font-semibold">Contacts</h2>
           </div>
           <div class="space-y-2 mb-3">
-            <input id="contactName" type="text" placeholder="Name" class="inp w-full px-4 py-2 text-sm">
-            <input id="contactAddress" type="text" placeholder="0x..." class="inp font-mono w-full px-4 py-2 text-sm">
-            <button id="addContactBtn" class="btn-secondary w-full py-2 text-sm">
-              <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>+ Add Contact
-            </button>
+            <input id="contactName" type="text" placeholder="Name" class="inp w-full border rounded-2xl px-4 py-2 text-sm">
+            <input id="contactAddress" type="text" placeholder="0x..." class="inp w-full border rounded-2xl px-4 py-2 text-sm">
+            <button id="addContactBtn" class="w-full py-2 btn-s border rounded-2xl text-sm transition">+ Add Contact</button>
           </div>
           <div id="contactsList" class="space-y-1.5 max-h-52 overflow-y-auto"></div>
         </div>
 
         <!-- Inline Calendar -->
-        <div class="card p-5" style="transform:rotate(-0.4deg)">
-          <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
+        <div class="card border rounded-3xl p-5">
           <div class="flex items-center justify-between mb-3">
-            <div class="sec-head">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <h2 id="calendarTitle"></h2>
+            <div class="flex items-center gap-2">
+              <div class="w-1.5 h-5 bg-emerald-400 rounded-full"></div>
+              <h2 class="text-base font-semibold" id="calendarTitle"></h2>
             </div>
             <div class="flex gap-1">
-              <button id="prevMonth" class="icon-btn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-              <button id="nextMonth" class="icon-btn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-              <button id="calendarBtn" class="icon-btn" title="Expand"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+              <button id="prevMonth" class="w-7 h-7 flex items-center justify-center hover:bg-zinc-800 rounded-lg transition t3 text-sm">←</button>
+              <button id="nextMonth" class="w-7 h-7 flex items-center justify-center hover:bg-zinc-800 rounded-lg transition t3 text-sm">→</button>
+              <button id="calendarBtn" class="w-7 h-7 flex items-center justify-center hover:bg-zinc-800 rounded-lg transition t3 text-sm" title="Expand">⤢</button>
             </div>
           </div>
           <div class="flex gap-2 mb-2 flex-wrap">
-            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full inline-block" style="background:var(--accent)"></span>Tx</span>
-            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>Sched</span>
-            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full inline-block" style="background:var(--memo-text2)"></span>Note</span>
-            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full inline-block" style="background:var(--sienna)"></span>Event</span>
-            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full inline-block" style="background:var(--coral)"></span>Custom</span>
-            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full inline-block" style="background:var(--success)"></span>Transfer</span>
+            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>Tx</span>
+            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block"></span>Sched</span>
+            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block"></span>Note</span>
+            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block"></span>Event</span>
+            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-purple-400 inline-block"></span>Custom</span>
+            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-teal-400 inline-block"></span>Transfer</span>
           </div>
           <div id="calendarGrid" class="grid grid-cols-7 gap-0.5 text-center text-xs"></div>
           <div id="miniDayDetail" class="hidden mt-3 pt-3 border-t bdr">
             <div class="flex justify-between items-center mb-2">
               <span id="miniSelectedDate" class="text-xs font-semibold"></span>
-              <span id="miniDayTotal" class="text-xs font-mono" style="color:var(--accent)"></span>
+              <span id="miniDayTotal" class="text-xs font-mono text-emerald-400"></span>
             </div>
             <div id="miniDayContent" class="space-y-1 max-h-36 overflow-y-auto mb-2"></div>
             <div class="space-y-1.5">
               <div class="flex gap-1.5">
-                <input id="miniEventTitle" type="text" placeholder="Title..." class="inp flex-1 px-3 py-1.5 text-xs min-w-0">
-                <select id="miniEventType" class="inp px-2 py-1.5 text-xs">
-                  <option value="note">Note</option>
-                  <option value="event">Event</option>
-                  <option value="holiday">Holiday</option>
-                  <option value="custom">Custom</option>
-                  <option value="payment">Transfer</option>
+                <input id="miniEventTitle" type="text" placeholder="Title..." class="inp flex-1 border rounded-xl px-3 py-1.5 text-xs min-w-0">
+                <select id="miniEventType" class="inp border rounded-xl px-2 py-1.5 text-xs">
+                  <option value="note">📝 Note</option>
+                  <option value="event">🎯 Event</option>
+                  <option value="holiday">🎉 Holiday</option>
+                  <option value="custom">✏️ Custom</option>
+                  <option value="payment">💸 Transfer</option>
                 </select>
-                <button id="miniSaveEventBtn" class="btn-primary px-3 py-1.5 text-xs shrink-0">
-                  <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="6"/></svg>+
-                </button>
+                <button id="miniSaveEventBtn" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-medium text-xs rounded-xl transition shrink-0">+</button>
               </div>
               <div id="miniCustomFields" class="hidden">
-                <input id="miniCustomLabel" type="text" placeholder="Custom event name..." class="inp w-full px-3 py-1.5 text-xs">
+                <input id="miniCustomLabel" type="text" placeholder="Custom event name..." class="inp w-full border rounded-xl px-3 py-1.5 text-xs">
               </div>
               <div id="miniPaymentFields" class="hidden space-y-1.5">
                 <div class="flex gap-1.5">
-                  <input id="miniPayRecipient" type="text" placeholder="Recipient 0x..." class="inp font-mono flex-1 px-3 py-1.5 text-xs min-w-0">
-                  <button id="miniPickContactBtn" class="icon-btn shrink-0"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+                  <input id="miniPayRecipient" type="text" placeholder="Recipient 0x..." class="inp flex-1 border rounded-xl px-3 py-1.5 text-xs min-w-0">
+                  <button id="miniPickContactBtn" class="px-2.5 py-1.5 btn-s border rounded-xl text-xs transition shrink-0">👤</button>
                 </div>
-                <input id="miniPayAmount" type="number" value="1" placeholder="Amount USDC" class="inp font-mono w-full px-3 py-1.5 text-xs">
+                <input id="miniPayAmount" type="number" value="1" placeholder="Amount USDC" class="inp w-full border rounded-xl px-3 py-1.5 text-xs">
               </div>
             </div>
           </div>
@@ -373,34 +288,33 @@
       </div>
 
       <!-- Scheduled Payments -->
-      <div class="card p-5 mb-6" style="transform:rotate(0.25deg)">
-        <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
+      <div class="card border rounded-3xl p-5 mb-5">
         <div class="flex items-center justify-between mb-4">
-          <div class="sec-head">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
-            <h2>Scheduled Payments</h2>
+          <div class="flex items-center gap-2">
+            <div class="w-1.5 h-5 bg-violet-500 rounded-full"></div>
+            <h2 class="text-base font-semibold">Scheduled Payments</h2>
           </div>
-          <button id="toggleScheduleForm" class="btn-ghost text-xs px-3 py-1.5">+ Schedule</button>
+          <button id="toggleScheduleForm" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">+ Schedule</button>
         </div>
-        <div id="scheduleForm" class="hidden mb-4 p-4 border-2 bdr rounded-2xl space-y-3" style="border-style:dashed">
+        <div id="scheduleForm" class="hidden mb-4 p-4 border bdr rounded-2xl space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="text-xs t3 uppercase tracking-wider block mb-1">Recipient</label>
-              <input id="schedRecipient" type="text" placeholder="0x..." class="inp font-mono w-full px-3 py-2 text-sm">
+              <input id="schedRecipient" type="text" placeholder="0x..." class="inp w-full border rounded-xl px-3 py-2 text-sm">
             </div>
             <div>
               <label class="text-xs t3 uppercase tracking-wider block mb-1">Amount (USDC)</label>
-              <input id="schedAmount" type="number" value="1" step="0.01" class="inp font-mono w-full px-3 py-2 text-sm">
+              <input id="schedAmount" type="number" value="1" step="0.01" class="inp w-full border rounded-xl px-3 py-2 text-sm">
             </div>
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="text-xs t3 uppercase tracking-wider block mb-1">Date and Time</label>
-              <input id="schedDateTime" type="datetime-local" class="inp w-full px-3 py-2 text-sm">
+              <input id="schedDateTime" type="datetime-local" class="inp w-full border rounded-xl px-3 py-2 text-sm">
             </div>
             <div>
               <label class="text-xs t3 uppercase tracking-wider block mb-1">Repeat</label>
-              <select id="schedRepeat" class="inp w-full px-3 py-2 text-sm">
+              <select id="schedRepeat" class="inp w-full border rounded-xl px-3 py-2 text-sm">
                 <option value="once">One time</option>
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -410,39 +324,34 @@
           </div>
           <div>
             <label class="text-xs t3 uppercase tracking-wider block mb-1">Memo</label>
-            <input id="schedMemo" type="text" placeholder="e.g. Monthly rent..." class="memo-box font-hand w-full px-3 py-2.5">
+            <input id="schedMemo" type="text" placeholder="e.g. Monthly rent..." class="inp w-full border rounded-xl px-3 py-2 text-sm">
           </div>
           <div class="flex gap-2">
-            <button id="saveScheduleBtn" class="btn-primary flex-1 py-2 text-sm">
-              <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>Save Schedule
-            </button>
-            <button id="cancelScheduleBtn" class="btn-ghost px-4 py-2 text-sm">Cancel</button>
+            <button id="saveScheduleBtn" class="flex-1 py-2 bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/30 text-violet-400 text-sm font-medium rounded-xl transition">Save Schedule</button>
+            <button id="cancelScheduleBtn" class="px-4 py-2 btn-s border rounded-xl text-sm transition">Cancel</button>
           </div>
         </div>
         <div id="scheduledList"><div class="text-center py-6 t3 text-xs">No scheduled payments</div></div>
       </div>
 
       <!-- Swap Card -->
-      <div class="card p-6 mb-6" style="transform:rotate(-0.3deg)">
-        <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
+      <div class="card border rounded-3xl p-6 mb-5">
         <div class="flex items-center gap-2 mb-5">
-          <div class="sec-head">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-            <h2>Swap Tokens</h2>
-          </div>
-          <span class="badge badge-doodle ml-1" style="background:var(--accent-soft);color:var(--accent)">via Circle</span>
+          <div class="w-1.5 h-5 bg-indigo-500 rounded-full"></div>
+          <h2 class="text-base font-semibold">Swap Tokens</h2>
+          <span class="text-xs px-2 py-0.5 bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 rounded-lg">via Circle</span>
         </div>
 
         <div class="relative">
           <!-- From -->
-          <div class="border-2 bdr rounded-2xl p-3.5" style="background:var(--surface-2)">
+          <div class="border bdr rounded-2xl p-3.5" style="background:var(--card)">
             <div class="flex justify-between items-center mb-1.5">
               <label class="text-xs t3 font-medium uppercase tracking-wider">From</label>
-              <span id="swapBalanceIn" class="text-xs t3 font-mono"></span>
+              <span id="swapBalanceIn" class="text-xs t3"></span>
             </div>
             <div class="flex items-center gap-2">
-              <input id="swapAmount" type="number" value="1" step="0.01" class="flex-1 bg-transparent border-0 outline-none text-xl font-semibold font-mono p-0 min-w-0">
-              <select id="swapTokenIn" class="inp px-3 py-2 text-sm font-semibold shrink-0" style="background:var(--surface)">
+              <input id="swapAmount" type="number" value="1" step="0.01" class="flex-1 bg-transparent border-0 outline-none text-xl font-semibold p-0 min-w-0">
+              <select id="swapTokenIn" class="inp border rounded-xl px-3 py-2 text-sm font-semibold shrink-0">
                 <option value="USDC">USDC</option>
                 <option value="USDT">USDT</option>
                 <option value="EURC">EURC</option>
@@ -453,20 +362,18 @@
 
           <!-- Direction button -->
           <div class="flex justify-center" style="height:0;">
-            <button id="swapDirectionBtn" class="icon-btn relative -top-3.5 border-2 z-10" style="border-color:var(--bg);background:var(--surface-2)" title="Reverse">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg>
-            </button>
+            <button id="swapDirectionBtn" class="relative -top-3.5 w-8 h-8 rounded-full btn-s border-4 flex items-center justify-center text-sm z-10" style="border-color:var(--bg)" title="Reverse">⇅</button>
           </div>
 
           <!-- To -->
-          <div class="border-2 bdr rounded-2xl p-3.5 -mt-1" style="background:var(--surface-2)">
+          <div class="border bdr rounded-2xl p-3.5 -mt-1" style="background:var(--card)">
             <div class="flex justify-between items-center mb-1.5">
               <label class="text-xs t3 font-medium uppercase tracking-wider">To</label>
-              <span id="swapBalanceOut" class="text-xs t3 font-mono"></span>
+              <span id="swapBalanceOut" class="text-xs t3"></span>
             </div>
             <div class="flex items-center gap-2">
-              <div id="swapEstimateOut" class="flex-1 text-xl font-semibold font-mono t3 truncate">0.00</div>
-              <select id="swapTokenOut" class="inp px-3 py-2 text-sm font-semibold shrink-0" style="background:var(--surface)">
+              <div id="swapEstimateOut" class="flex-1 text-xl font-semibold t3 truncate">0.00</div>
+              <select id="swapTokenOut" class="inp border rounded-xl px-3 py-2 text-sm font-semibold shrink-0">
                 <option value="EURC">EURC</option>
                 <option value="USDC">USDC</option>
                 <option value="USDT">USDT</option>
@@ -476,26 +383,22 @@
           </div>
         </div>
 
-        <div id="swapRateInfo" class="text-xs t3 font-mono text-center mt-3"></div>
-        <button id="swapBtn" class="btn-primary mt-3 w-full py-3 text-sm">
-          <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="8"/></svg>
-          <span id="swapBtnLabel">Swap →</span>
-        </button>
+        <div id="swapRateInfo" class="text-xs t3 text-center mt-3"></div>
+        <button id="swapBtn" class="mt-3 w-full bg-indigo-500 hover:bg-indigo-400 transition text-white font-semibold py-3 rounded-2xl text-sm">Swap →</button>
         <div id="swapStatus" class="hidden mt-3 text-xs t3 text-center"></div>
       </div>
 
       <!-- History -->
-      <div class="card p-5 mb-8" style="transform:rotate(0.2deg)">
-        <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="16"/></svg>
+      <div class="card border rounded-3xl p-5 mb-8">
         <div class="flex items-center justify-between mb-4">
-          <div class="sec-head">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            <h2>History</h2>
+          <div class="flex items-center gap-2">
+            <div class="w-1.5 h-5 bg-orange-500 rounded-full"></div>
+            <h2 class="text-base font-semibold">History</h2>
           </div>
           <div class="flex gap-2">
-            <input id="searchInput" type="text" placeholder="Search..." class="inp px-3 py-1.5 text-xs w-32">
-            <button id="exportBtn" class="btn-ghost text-xs px-3 py-1.5">Export</button>
-            <button id="clearHistoryBtn" class="btn-ghost text-xs px-3 py-1.5">Clear</button>
+            <input id="searchInput" type="text" placeholder="Search..." class="inp border rounded-xl px-3 py-1.5 text-xs w-32">
+            <button id="exportBtn" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">Export</button>
+            <button id="clearHistoryBtn" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">Clear</button>
           </div>
         </div>
         <div id="historyList" class="space-y-1.5"></div>
@@ -503,85 +406,71 @@
       </div>
 
       <!-- Footer -->
-      <footer class="border-t-2 bdr pt-5" style="border-style:dashed">
+      <footer class="border-t bdr pt-5">
         <div class="flex flex-wrap items-center justify-center gap-5 text-xs t3">
-          <a href="https://faucet.circle.com/" target="_blank" class="hover:text-[var(--text)] transition inline-flex items-center gap-1.5">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69s-6 7.5-6 11a6 6 0 0 0 12 0c0-3.5-6-11-6-11Z"/></svg>
-            Faucet
-          </a>
-          <a href="https://testnet.arcscan.app/" target="_blank" class="hover:text-[var(--text)] transition inline-flex items-center gap-1.5">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            Explorer
-          </a>
-          <a href="https://docs.arc.io/" target="_blank" class="hover:text-[var(--text)] transition inline-flex items-center gap-1.5">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            Arc Docs
-          </a>
-          <a href="https://x.com/Memo_Journal" target="_blank" class="hover:text-[var(--text)] transition font-bold">𝕏</a>
+          <a href="https://faucet.circle.com/" target="_blank" class="hover:text-emerald-400 transition">💧 Faucet</a>
+          <a href="https://testnet.arcscan.app/" target="_blank" class="hover:text-blue-400 transition">🔍 Explorer</a>
+          <a href="https://docs.arc.io/" target="_blank" class="hover:text-zinc-300 transition">📄 Arc Docs</a>
+          <a href="https://x.com/Memo_Journal" target="_blank" class="hover:text-zinc-300 transition font-bold">𝕏</a>
         </div>
-        <div class="text-center font-hand text-base t3 mt-3">MemoJournal · Built on Arc Testnet · 2025</div>
+        <div class="text-center text-xs t3 mt-3 opacity-50">MemoJournal · Built on Arc Testnet · 2025</div>
       </footer>
     </div>
 
     <!-- Full Calendar Modal -->
-    <div id="calendarModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="relative rounded-3xl w-full max-w-lg border-2" style="background:var(--surface);border-color:var(--border-strong)">
-        <svg class="hand-frame"><rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="22"/></svg>
-        <div class="flex justify-between items-center p-5 border-b-2 bdr" style="border-style:dashed">
-          <button id="modalPrevMonth" class="icon-btn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-          <h3 id="modalCalendarTitle" class="font-hand2 text-lg"></h3>
-          <button id="modalNextMonth" class="icon-btn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+    <div id="calendarModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-zinc-900 border border-zinc-700/80 rounded-3xl w-full max-w-lg">
+        <div class="flex justify-between items-center p-5 border-b border-zinc-800">
+          <button id="modalPrevMonth" class="w-8 h-8 flex items-center justify-center hover:bg-zinc-800 rounded-xl transition t3">←</button>
+          <h3 id="modalCalendarTitle" class="text-sm font-semibold"></h3>
+          <button id="modalNextMonth" class="w-8 h-8 flex items-center justify-center hover:bg-zinc-800 rounded-xl transition t3">→</button>
         </div>
         <div class="p-5">
           <div class="flex gap-3 mb-3 text-xs t3 flex-wrap">
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:var(--accent)"></span>Transaction</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>Scheduled</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:var(--memo-text2)"></span>Note</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:var(--sienna)"></span>Event</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:var(--coral)"></span>Holiday</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:var(--accent)"></span>Custom</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:var(--success)"></span>Transfer</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>Transaction</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-violet-500 inline-block"></span>Scheduled</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>Note</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>Event</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pink-400 inline-block"></span>Holiday</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>Custom</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-teal-400 inline-block"></span>Transfer</span>
           </div>
           <div id="modalCalendarGrid" class="grid grid-cols-7 gap-1 text-center text-xs mb-4"></div>
-          <div id="modalDayDetails" class="hidden border-t-2 bdr pt-4" style="border-style:dashed">
+          <div id="modalDayDetails" class="hidden border-t border-zinc-800 pt-4">
             <div class="flex justify-between items-center mb-3">
               <div id="modalSelectedDate" class="text-sm font-semibold"></div>
-              <div id="modalDayTotal" class="font-mono text-sm" style="color:var(--accent)"></div>
+              <div id="modalDayTotal" class="font-mono text-emerald-400 text-sm"></div>
             </div>
             <div id="modalDayContent" class="space-y-1.5 max-h-40 overflow-auto mb-3"></div>
-            <div class="rounded-2xl p-3 space-y-2 border-2 bdr" style="background:var(--surface-2);border-style:dashed">
+            <div class="bg-zinc-800/40 border border-zinc-700/50 rounded-2xl p-3 space-y-2">
               <div class="text-xs t3 font-medium uppercase tracking-wider">Add to this day</div>
-              <input id="modalEventTitle" type="text" placeholder="Title..." class="inp w-full px-3 py-2 text-sm" style="background:var(--surface)">
+              <input id="modalEventTitle" type="text" placeholder="Title..." class="inp w-full border rounded-xl px-3 py-2 text-sm">
               <div class="flex gap-2">
-                <select id="modalEventType" class="flex-1 inp px-3 py-2 text-xs" style="background:var(--surface)">
-                  <option value="note">Note</option>
-                  <option value="event">Event</option>
-                  <option value="holiday">Holiday</option>
-                  <option value="custom">Custom</option>
-                  <option value="payment">Transfer</option>
+                <select id="modalEventType" class="flex-1 inp border rounded-xl px-3 py-2 text-xs">
+                  <option value="note">📝 Note</option>
+                  <option value="event">🎯 Event</option>
+                  <option value="holiday">🎉 Holiday</option>
+                  <option value="custom">✏️ Custom</option>
+                  <option value="payment">💸 Transfer</option>
                 </select>
-                <input id="modalEventColor" type="color" value="#C47D5A" class="w-10 h-9 rounded-xl border bdr bg-transparent cursor-pointer p-1">
-                <button id="modalSaveEventBtn" class="btn-primary px-4 py-2 text-xs">
-                  <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="7"/></svg>Save
-                </button>
+                <input id="modalEventColor" type="color" value="#6366f1" class="w-10 h-9 rounded-xl border border-zinc-700 bg-transparent cursor-pointer p-1">
+                <button id="modalSaveEventBtn" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-medium text-xs rounded-xl transition">Save</button>
               </div>
               <div id="modalCustomFields" class="hidden">
-                <input id="modalCustomLabel" type="text" placeholder="Custom event name..." class="inp w-full px-3 py-2 text-xs" style="background:var(--surface)">
+                <input id="modalCustomLabel" type="text" placeholder="Custom event name..." class="inp w-full border rounded-xl px-3 py-2 text-xs">
               </div>
               <div id="modalPaymentFields" class="hidden space-y-2">
                 <div class="flex gap-2">
-                  <input id="modalPayRecipient" type="text" placeholder="Recipient 0x..." class="inp font-mono flex-1 px-3 py-2 text-xs min-w-0" style="background:var(--surface)">
-                  <button id="modalPickContactBtn" class="icon-btn shrink-0"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+                  <input id="modalPayRecipient" type="text" placeholder="Recipient 0x..." class="inp flex-1 border rounded-xl px-3 py-2 text-xs min-w-0">
+                  <button id="modalPickContactBtn" class="px-3 py-2 btn-s border rounded-xl text-xs transition shrink-0">👤</button>
                 </div>
-                <input id="modalPayAmount" type="number" value="1" class="inp font-mono w-full px-3 py-2 text-xs" style="background:var(--surface)">
+                <input id="modalPayAmount" type="number" value="1" class="inp w-full border rounded-xl px-3 py-2 text-xs">
               </div>
             </div>
           </div>
         </div>
         <div class="px-5 pb-5">
-          <button id="closeCalendar" class="btn-secondary w-full py-2.5 text-sm">
-            <svg class="hand-frame-btn"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="10"/></svg>Close
-          </button>
+          <button id="closeCalendar" class="w-full py-2.5 btn-s border rounded-2xl text-sm transition">Close</button>
         </div>
       </div>
     </div>
