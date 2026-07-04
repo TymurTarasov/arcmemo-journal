@@ -16,9 +16,9 @@ const ERC20_ABI = [
     outputs: [{ name: "", type: "uint256" }] },
 ];
 
-const DEFAULT_COLORS = { Payment:"#10b981", Gift:"#f59e0b", Work:"#3b82f6", Other:"#6b7280" };
+const DEFAULT_COLORS = { Payment:"#009dbd", Gift:"#22b8d6", Work:"#006c81", Other:"#6b7280" };
 const TYPE_ICONS = { note:"📝", event:"🎯", holiday:"🎉", custom:"✏️", payment:"💸" };
-const TYPE_COLORS = { note:"#60a5fa", event:"#fb923c", holiday:"#f472b6", custom:"#a78bfa", payment:"#2dd4bf" };
+const TYPE_COLORS = { note:"#009dbd", event:"#22b8d6", holiday:"#8fdcee", custom:"#006c81", payment:"#6b7280" };
 
 const $ = id => document.getElementById(id);
 
@@ -85,10 +85,10 @@ function renderContactModalList(q = "") {
   if (!f.length) { list.innerHTML = '<p class="text-zinc-600 text-xs text-center py-4">No contacts found</p>'; return; }
   list.innerHTML = f.map(c =>
     '<div onclick="pickContactItem(\'' + c.address + '\',\'' + c.name + '\')" class="flex items-center gap-3 p-3 bg-zinc-800/60 hover:bg-zinc-700/60 rounded-2xl cursor-pointer transition border border-transparent hover:border-zinc-600">' +
-    '<div class="w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-semibold text-xs shrink-0">' + c.name.slice(0,2).toUpperCase() + '</div>' +
+    '<div class="w-9 h-9 rounded-full avatar-accent flex items-center justify-center font-semibold text-xs shrink-0">' + c.name.slice(0,2).toUpperCase() + '</div>' +
     '<div class="flex-1 min-w-0"><div class="text-sm font-medium text-white">' + c.name + '</div>' +
     '<div class="font-mono text-xs text-zinc-500 truncate">' + c.address + '</div></div>' +
-    '<span class="text-emerald-500 text-xs">→</span></div>'
+    '<span class="text-accent text-xs">→</span></div>'
   ).join("");
 }
 window.pickContactItem = (address, name) => {
@@ -133,7 +133,7 @@ function renderMultiRecipients() {
   }
   el.innerHTML = multiRecipients.map((r, i) =>
     '<div class="flex items-center gap-2 p-2.5 rounded-xl border bdr" style="background:var(--card)">' +
-    '<div class="w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-semibold text-xs shrink-0">' +
+    '<div class="w-7 h-7 rounded-full avatar-accent flex items-center justify-center font-semibold text-xs shrink-0">' +
     (r.name ? r.name.slice(0,2).toUpperCase() : (i+1)) + '</div>' +
     '<div class="flex-1 min-w-0">' +
     (r.name ? '<div class="text-xs font-medium">' + r.name + '</div>' : '') +
@@ -168,11 +168,11 @@ $("addFromContactsBtn").onclick = () => {
   $("contactSearchModal").value = "";
   const f = allContacts;
   list.innerHTML = f.map(c =>
-    '<div onclick="addContactToMulti(\'' + c.address + '\',\'' + c.name + '\')" class="flex items-center gap-3 p-3 bg-zinc-800/60 hover:bg-zinc-700/60 rounded-2xl cursor-pointer transition border border-transparent hover:border-emerald-500/40">' +
-    '<div class="w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-semibold text-xs shrink-0">' + c.name.slice(0,2).toUpperCase() + '</div>' +
+    '<div onclick="addContactToMulti(\'' + c.address + '\',\'' + c.name + '\')" class="flex items-center gap-3 p-3 bg-zinc-800/60 hover:bg-zinc-700/60 rounded-2xl cursor-pointer transition border border-transparent hover:border-[var(--accent)]">' +
+    '<div class="w-9 h-9 rounded-full avatar-accent flex items-center justify-center font-semibold text-xs shrink-0">' + c.name.slice(0,2).toUpperCase() + '</div>' +
     '<div class="flex-1 min-w-0"><div class="text-sm font-medium text-white">' + c.name + '</div>' +
     '<div class="font-mono text-xs text-zinc-500 truncate">' + c.address + '</div></div>' +
-    '<span class="text-emerald-500 text-xs">+ Add</span></div>'
+    '<span class="text-accent text-xs">+ Add</span></div>'
   ).join("");
   contactPickCallback = null;
   m.classList.remove("hidden");
@@ -272,10 +272,10 @@ function renderSavedCategories() {
   const el = $("savedCategoriesList");
   if (!allCategories.length) { el.innerHTML = '<span class="text-xs t3">No custom categories yet</span>'; return; }
   el.innerHTML = allCategories.map(c =>
-    '<div class="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 border group" style="background:' + (c.color||"#6366f1") + '22;border-color:' + (c.color||"#6366f1") + '55">' +
-    '<span class="w-2 h-2 rounded-full shrink-0" style="background:' + (c.color||"#6366f1") + '"></span>' +
-    '<button onclick="selectCategory(\'' + c.name + '\')" class="text-xs font-medium transition" style="color:' + (c.color||"#6366f1") + '">' + c.name + '</button>' +
-    '<button onclick="renameCategory(' + c.id + ',\'' + c.name + '\')" class="text-zinc-600 hover:text-blue-400 text-xs ml-1 transition">✎</button>' +
+    '<div class="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 border group" style="background:' + (c.color||"#009dbd") + '22;border-color:' + (c.color||"#009dbd") + '55">' +
+    '<span class="w-2 h-2 rounded-full shrink-0" style="background:' + (c.color||"#009dbd") + '"></span>' +
+    '<button onclick="selectCategory(\'' + c.name + '\')" class="text-xs font-medium transition" style="color:' + (c.color||"#009dbd") + '">' + c.name + '</button>' +
+    '<button onclick="renameCategory(' + c.id + ',\'' + c.name + '\')" class="text-zinc-600 hover:text-accent text-xs ml-1 transition">✎</button>' +
     '<button onclick="deleteCategoryById(' + c.id + ')" class="text-zinc-600 hover:text-red-400 text-xs transition">✕</button>' +
     '</div>'
   ).join("");
@@ -330,7 +330,7 @@ $("connectBtn").onclick = async () => {
   } catch (err) { showToast("Error: " + err.message, "error"); }
 };
 function updateWalletUI() {
-  $("walletStatus").innerHTML = '<span class="text-emerald-400 font-mono text-xs">' + account.slice(0,6) + "..." + account.slice(-4) + "</span>";
+  $("walletStatus").innerHTML = '<span class="text-accent font-mono text-xs">' + account.slice(0,6) + "..." + account.slice(-4) + "</span>";
   $("networkBadge").classList.remove("hidden");
   $("balanceDisplay").classList.remove("hidden");
   const btn = $("connectBtn");
@@ -352,7 +352,7 @@ function disconnectWallet() {
       await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances(), loadSwapHistory()]);
     } catch (err) { showToast("Error: " + err.message, "error"); }
   };
-  historyExpanded = false;
+  historyExpanded = false; swapHistoryExpanded = false;
   renderHistory([]); renderContacts([]); renderSwapHistory([]);
   $("scheduledList").innerHTML = '<div class="text-center py-6 t3 text-xs">No scheduled payments</div>';
   updateSwapBalances();
@@ -426,9 +426,9 @@ function renderHistory(items) {
       '<div class="flex-1 min-w-0 truncate"><span class="font-medium">' + (name || short) + '</span>' +
       (tx.memo ? '<span class="t3"> · ' + tx.memo + '</span>' : '') + '</div>' +
       '<span class="px-2 py-0.5 rounded-lg text-xs font-semibold shrink-0" style="background:' + color + '22;color:' + color + '">' + tx.category + '</span>' +
-      '<span class="text-emerald-400 font-semibold shrink-0">' + tx.amount + ' USDC</span>' +
+      '<span class="text-accent font-semibold shrink-0">' + tx.amount + ' USDC</span>' +
       '<span class="t3 shrink-0">' + date + '</span>' +
-      (tx.txhash ? '<a href="https://testnet.arcscan.app/tx/' + tx.txhash + '" target="_blank" class="t3 hover:text-blue-400 transition shrink-0">↗</a>' : '') +
+      (tx.txhash ? '<a href="https://testnet.arcscan.app/tx/' + tx.txhash + '" target="_blank" class="t3 hover:text-accent transition shrink-0">↗</a>' : '') +
       '</div>'
     );
   }).join("");
@@ -485,11 +485,11 @@ function renderContacts(contacts) {
   el.innerHTML = contacts.map(c =>
     '<div class="flex items-center justify-between py-1.5 px-1 group">' +
     '<div class="flex items-center gap-2">' +
-    '<div class="w-7 h-7 rounded-full bg-zinc-700/60 t2 flex items-center justify-center font-semibold text-xs">' + c.name.slice(0,2).toUpperCase() + '</div>' +
+    '<div class="w-7 h-7 rounded-full avatar-accent flex items-center justify-center font-semibold text-xs">' + c.name.slice(0,2).toUpperCase() + '</div>' +
     '<div><div class="text-sm font-medium">' + c.name + '</div>' +
     '<div class="font-mono text-xs t3">' + c.address.slice(0,6) + "..." + c.address.slice(-4) + '</div></div></div>' +
     '<div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">' +
-    '<button onclick="useContact(\'' + c.address + '\',\'' + c.name + '\')" class="text-xs px-2 py-1 bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 rounded-lg transition">Send</button>' +
+    '<button onclick="useContact(\'' + c.address + '\',\'' + c.name + '\')" class="text-xs px-2 py-1 bg-accent-soft hover:bg-accent hover:text-white text-accent rounded-lg transition">Send</button>' +
     '<button onclick="deleteContact(' + c.id + ')" class="text-xs px-2 py-1 t3 hover:text-red-400 rounded-lg transition">✕</button>' +
     '</div></div>'
   ).join("");
@@ -529,14 +529,14 @@ function renderScheduled(items) {
   const labels={once:"Once",daily:"Daily",weekly:"Weekly",monthly:"Monthly"};
   el.innerHTML=items.map(p=>{
     const dt=new Date(p.scheduled_at),isDue=dt<=new Date(),name=getContactName(p.recipient);
-    return '<div class="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs '+(isDue?'border-violet-500/40 bg-violet-500/5':'bdr')+'">' +
-    '<div class="text-base shrink-0">'+(isDue?'⚡':'⏰')+'</div>' +
+    return '<div class="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs '+(isDue?'border-amber-500/40 bg-amber-500/5':'bdr')+'">' +
+    '<div class="shrink-0" style="color:'+(isDue?'var(--accent)':'var(--text3)')+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></div>' +
     '<div class="flex-1 min-w-0 truncate"><span class="font-medium">'+(name||p.recipient.slice(0,8)+"...")+' </span>' +
     '<span class="t3">'+dt.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+dt.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})+'</span>' +
     (p.memo?'<span class="t3"> · '+p.memo+'</span>':'')+'</div>' +
-    '<span class="text-violet-400 font-semibold shrink-0">'+p.amount+' USDC</span>' +
+    '<span class="text-amber-600 font-semibold shrink-0">'+p.amount+' USDC</span>' +
     '<span class="t3 shrink-0">'+labels[p.repeat_type]+'</span>' +
-    (isDue?'<button onclick="executeScheduled('+p.id+',\''+p.recipient+'\','+p.amount+',\''+(p.memo||"")+'\',\'Payment\',\''+p.repeat_type+'\')" class="text-xs px-2.5 py-1 bg-violet-500/20 hover:bg-violet-500/40 border border-violet-500/30 text-violet-300 rounded-lg transition shrink-0">Send</button>':'')+
+    (isDue?'<button onclick="executeScheduled('+p.id+',\''+p.recipient+'\','+p.amount+',\''+(p.memo||"")+'\',\'Payment\',\''+p.repeat_type+'\')" class="text-xs px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/30 text-amber-700 dark:text-amber-300 rounded-lg transition shrink-0">Send</button>':'')+
     '<button onclick="deleteScheduled('+p.id+')" class="t3 hover:text-red-400 text-xs shrink-0 transition ml-1">✕</button></div>';
   }).join("");
 }
@@ -569,7 +569,15 @@ function getDateKey(y,m,d){const pad=n=>String(n).padStart(2,"0");return y+"-"+p
 // ─── SCHEDULE PAGE CALENDAR (big, permanent — not a popup) ────────────
 $("schedPrevMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()-1);renderSchedCalendar();};
 $("schedNextMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()+1);renderSchedCalendar();};
-$("schedEventType").addEventListener("change",()=>{const t=$("schedEventType").value;$("schedPaymentFields").classList.toggle("hidden",t!=="payment");$("schedCustomFields").classList.toggle("hidden",t!=="custom");$("schedEventColor").value=TYPE_COLORS[t]||"#6366f1";});
+$("schedEventType").addEventListener("change",()=>{const t=$("schedEventType").value;$("schedPaymentFields").classList.toggle("hidden",t!=="payment");$("schedCustomFields").classList.toggle("hidden",t!=="custom");$("schedEventColor").value=TYPE_COLORS[t]||"#009dbd";});
+document.querySelectorAll("#schedTypeTabs .type-tab").forEach(tab=>{
+  tab.onclick=()=>{
+    document.querySelectorAll("#schedTypeTabs .type-tab").forEach(t=>t.classList.remove("type-tab-active"));
+    tab.classList.add("type-tab-active");
+    $("schedEventType").value=tab.dataset.type;
+    $("schedEventType").dispatchEvent(new Event("change"));
+  };
+});
 $("schedPickContactBtn").onclick=()=>{if(!allContacts.length){showToast("No contacts yet","info");return;}openContactPicker((address,name)=>{$("schedPayRecipient").value=address;showToast("Selected: "+name,"info");});};
 $("schedSaveEventBtn").onclick=async()=>{
   if(!account){showToast("Connect wallet first!","error");return;}
@@ -614,13 +622,13 @@ function renderSchedCalendar(){
     const isSelected=isSelMonth&&selectedSchedDay.d===day;
     const hasTx=txByDay[day],hasSched=schedByDay[day],hasEv=eventsByDay[day];
     const dots=[];
-    if(hasTx)dots.push('<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>');
-    if(hasSched)dots.push('<span class="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block"></span>');
+    if(hasTx)dots.push('<span class="w-1.5 h-1.5 rounded-full dot-accent inline-block"></span>');
+    if(hasSched)dots.push('<span class="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span>');
     if(hasEv)hasEv.slice(0,3).forEach(e=>dots.push('<span class="w-1.5 h-1.5 rounded-full inline-block" style="background:'+e.color+'"></span>'));
     const evNames=hasEv?hasEv.slice(0,1).map(e=>'<div class="text-xs leading-tight truncate px-0.5" style="color:'+e.color+'">'+(TYPE_ICONS[e.type]||"")+" "+e.title+'</div>').join(""):"";
     let cls="py-2 rounded-xl cursor-pointer flex flex-col items-center hover:bg-zinc-800/60 transition min-h-[56px] justify-start pt-1.5 ";
-    if(isSelected)cls+="bg-indigo-500/25 outline outline-2 outline-indigo-500 text-indigo-300 font-semibold ";
-    else if(isToday)cls+="ring-1 ring-emerald-500/70 bg-emerald-500/15 text-emerald-400 font-semibold ";
+    if(isSelected)cls+="bg-accent-soft outline outline-2 outline-[var(--accent)] text-accent font-semibold ";
+    else if(isToday)cls+="ring-1 ring-[var(--accent)]/70 bg-accent-soft text-accent font-semibold ";
     else cls+=(hasTx||hasSched||hasEv?"text-white ":"text-zinc-500 ");
     html+='<div onclick="showSchedDayDetail('+day+','+year+','+month+')" class="'+cls+'"><span class="text-xs">'+day+'</span>'+(dots.length?'<div class="flex gap-0.5 mt-0.5">'+dots.join("")+'</div>':'')+evNames+'</div>';
   }
@@ -642,15 +650,15 @@ window.showSchedDayDetail=(day,year,month)=>{
     html+='<div class="flex items-center justify-between p-2 rounded-xl text-xs" style="background:'+e.color+'18;border:1px solid '+e.color+'30">'+
     '<span>'+(TYPE_ICONS[e.type]||"📝")+' '+e.title+'</span>'+
     '<div class="flex gap-1.5 ml-2 shrink-0">'+
-    '<button onclick="editSchedEvent('+e.id+',\''+e.title.replace(/'/g,"\\'")+'\',\''+e.type+'\')" class="text-zinc-500 hover:text-blue-400 transition">✎</button>'+
+    '<button onclick="editSchedEvent('+e.id+',\''+e.title.replace(/'/g,"\\'")+'\',\''+e.type+'\')" class="text-zinc-500 hover:text-accent transition">✎</button>'+
     '<button onclick="deleteSchedEvent('+e.id+')" class="text-zinc-500 hover:text-red-400 transition">✕</button>'+
     '</div></div>';
   });
-  scheds.forEach(p=>{html+='<div class="p-2 bg-violet-500/10 border border-violet-500/20 rounded-xl text-xs text-violet-300">💸 '+(getContactName(p.recipient)||p.recipient.slice(0,8)+"...")+" · "+p.amount+' USDC</div>';});
+  scheds.forEach(p=>{html+='<div class="p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-700 dark:text-amber-300">💸 '+(getContactName(p.recipient)||p.recipient.slice(0,8)+"...")+" · "+p.amount+' USDC</div>';});
   txs.forEach(tx=>{
     html+='<div class="p-2 rounded-xl text-xs" style="background:var(--card);border:1px solid var(--border)">'+
     '<div class="flex justify-between items-start"><span class="text-zinc-300 font-medium">'+(getContactName(tx.recipient)||tx.recipient.slice(0,8)+"...")+'</span>'+
-    '<span class="text-emerald-400 font-semibold ml-2 shrink-0">'+tx.amount+' USDC</span></div>'+
+    '<span class="text-accent font-semibold ml-2 shrink-0">'+tx.amount+' USDC</span></div>'+
     (tx.memo?'<div class="text-zinc-500 text-xs mt-0.5">💬 '+tx.memo+'</div>':'')+
     '</div>';
   });
@@ -774,25 +782,42 @@ async function loadSwapHistory() {
   const { data } = await supabase.from("swaps").select("*").eq("wallet", account.toLowerCase()).order("created_at", { ascending: false }).limit(50);
   renderSwapHistory(data || []);
 }
+let swapHistoryExpanded = false, lastSwapHistoryFull = [];
+const SWAP_HISTORY_PAGE_SIZE = 10;
 function renderSwapHistory(items) {
-  const el = $("swapHistoryList");
+  lastSwapHistoryFull = items;
+  const el = $("swapHistoryList"), toggleWrap = $("swapHistoryToggleWrap");
   if (!el) return;
-  if (!items.length) { el.innerHTML = '<div class="text-center py-8 t3 text-sm">No swaps yet</div>'; return; }
-  const statusColor = { done: "#10b981", pending: "#f59e0b", failed: "#ef4444" };
-  el.innerHTML = items.map(s => {
+  if (!items.length) {
+    el.innerHTML = '<div class="text-center py-8 t3 text-sm">No swaps yet</div>';
+    if (toggleWrap) toggleWrap.innerHTML = "";
+    return;
+  }
+  const statusColor = { done: "#009dbd", pending: "#f59e0b", failed: "#ef4444" };
+  const shown = swapHistoryExpanded ? items : items.slice(0, SWAP_HISTORY_PAGE_SIZE);
+  el.innerHTML = shown.map(s => {
     const color = statusColor[s.status] || "#6b7280";
     const date = new Date(s.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
     return (
       '<div class="flex items-center gap-2 px-3 py-2 rounded-xl border bdr text-xs" style="background:var(--card)">' +
       '<span class="px-2 py-0.5 rounded-lg text-xs font-semibold shrink-0" style="background:' + color + '22;color:' + color + '">' + s.status + '</span>' +
       '<span class="flex-1 min-w-0 truncate font-medium">' + s.token_in + ' → ' + s.token_out + '</span>' +
-      '<span class="text-indigo-400 font-semibold shrink-0">' + s.amount_in + ' ' + s.token_in + (s.amount_out ? ' → ' + parseFloat(s.amount_out).toFixed(4) + ' ' + s.token_out : '') + '</span>' +
+      '<span class="text-accent font-semibold shrink-0">' + s.amount_in + ' ' + s.token_in + (s.amount_out ? ' → ' + parseFloat(s.amount_out).toFixed(4) + ' ' + s.token_out : '') + '</span>' +
       '<span class="t3 shrink-0">' + date + '</span>' +
-      (s.payout_txhash ? '<a href="https://testnet.arcscan.app/tx/' + s.payout_txhash + '" target="_blank" class="t3 hover:text-blue-400 transition shrink-0">↗</a>' : '') +
+      (s.payout_txhash ? '<a href="https://testnet.arcscan.app/tx/' + s.payout_txhash + '" target="_blank" class="t3 hover:text-accent transition shrink-0">↗</a>' : '') +
       '</div>'
     );
   }).join("");
+  if (toggleWrap) {
+    if (items.length > SWAP_HISTORY_PAGE_SIZE) {
+      toggleWrap.innerHTML = '<button onclick="toggleSwapHistoryExpand()" class="w-full text-xs t3 hover:text-accent transition py-2 text-center">' +
+        (swapHistoryExpanded ? "▲ Show less" : "▼ Show " + (items.length - SWAP_HISTORY_PAGE_SIZE) + " more") + '</button>';
+    } else {
+      toggleWrap.innerHTML = "";
+    }
+  }
 }
+window.toggleSwapHistoryExpand = () => { swapHistoryExpanded = !swapHistoryExpanded; renderSwapHistory(lastSwapHistoryFull); };
 
 // ─── PAGE NAVIGATION (Send / Scheduled / Swap / NFT Gifts) ────────────
 const PAGES = ["send", "scheduled", "swap", "nft"];
