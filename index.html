@@ -64,13 +64,16 @@
         border-radius: 50%; top: 3px; background: white;
         transition: left 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       }
-      /* Dark theme -> knob sits near the moon icon (right side) */
       .dark .theme-track::after { left: 21px; }
-      /* Light theme -> knob sits near the sun icon (left side) */
       .light .theme-track::after { left: 3px; }
-      /* Multi-send recipient row */
       .recipient-row { display: flex; gap: 8px; align-items: center; }
       .recipient-row:not(:last-child) { margin-bottom: 8px; }
+
+      /* ── PAGE NAV ──────────────────────────────────────────────── */
+      .page-tab { padding: 10px 18px; border-radius: 14px; font-size: 14px; font-weight: 500; transition: all .15s; background: var(--btn-bg); color: var(--btn-text); border: 1px solid var(--border); position: relative; }
+      .page-tab:hover { background: var(--btn-hover); }
+      .page-tab-active { background: #6366f1 !important; color: #fff !important; border-color: #6366f1 !important; }
+      .page-tab-soon { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; opacity: .7; margin-left: 4px; vertical-align: super; }
     </style>
   </head>
   <body>
@@ -82,7 +85,7 @@
     <div class="relative max-w-3xl mx-auto px-5 py-8">
 
       <!-- Header -->
-      <div class="flex items-center justify-between mb-10">
+      <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-3">
           <img src="/logo.png" alt="MemoJournal" class="w-12 h-12 rounded-2xl">
           <div>
@@ -112,114 +115,123 @@
         </div>
       </div>
 
-      <!-- Send Card (single) -->
-      <div class="card border rounded-3xl p-6 mb-5">
-        <div class="flex items-center justify-between mb-5">
-          <div class="flex items-center gap-2">
-            <div class="w-1.5 h-5 bg-emerald-500 rounded-full"></div>
-            <h2 class="text-base font-semibold">Send USDC</h2>
-          </div>
-          <button id="switchToMultiBtn" class="text-xs px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 rounded-xl transition inline-flex items-center gap-1.5">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-            Multi-send
-          </button>
-        </div>
-        <div class="space-y-3">
-          <div>
-            <div class="flex justify-between items-center mb-1.5">
-              <label class="text-xs t3 font-medium uppercase tracking-wider">Recipient</label>
-              <button id="chooseContactBtn" class="text-xs px-3 py-1 btn-s border rounded-xl transition">From contacts</button>
+      <!-- Page navigation -->
+      <div class="flex flex-wrap gap-2 mb-6">
+        <button class="page-tab page-tab-active" data-page="send">Send</button>
+        <button class="page-tab" data-page="scheduled">Schedule</button>
+        <button class="page-tab" data-page="swap">Swap</button>
+        <button class="page-tab" data-page="nft">NFT Gifts<span class="page-tab-soon">Soon</span></button>
+      </div>
+
+      <!-- ══════════════════════ PAGE: SEND ══════════════════════ -->
+      <div id="page-send">
+
+        <!-- Send Card (single) -->
+        <div class="card border rounded-3xl p-6 mb-5">
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-2">
+              <div class="w-1.5 h-5 bg-emerald-500 rounded-full"></div>
+              <h2 class="text-base font-semibold">Send USDC</h2>
             </div>
-            <input id="recipient" type="text" placeholder="0x..." class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
+            <button id="switchToMultiBtn" class="text-xs px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 rounded-xl transition inline-flex items-center gap-1.5">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              Multi-send
+            </button>
           </div>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-3">
             <div>
-              <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Amount (USDC)</label>
-              <input id="amount" type="number" value="1" step="0.01" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
+              <div class="flex justify-between items-center mb-1.5">
+                <label class="text-xs t3 font-medium uppercase tracking-wider">Recipient</label>
+                <button id="chooseContactBtn" class="text-xs px-3 py-1 btn-s border rounded-xl transition">From contacts</button>
+              </div>
+              <input id="recipient" type="text" placeholder="0x..." class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Amount (USDC)</label>
+                <input id="amount" type="number" value="1" step="0.01" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Category</label>
+                <select id="category" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm font-medium"></select>
+              </div>
+            </div>
+            <div id="savedCategoriesBar" class="hidden">
+              <label class="text-xs t3 font-medium uppercase tracking-wider block mb-2">Your categories</label>
+              <div id="savedCategoriesList" class="flex flex-wrap gap-2 mb-2"></div>
+              <div class="flex gap-2">
+                <input id="newCategoryInput" type="text" placeholder="New category name..." class="inp flex-1 border rounded-xl px-3 py-2 text-sm">
+                <input id="newCategoryColor" type="color" value="#6366f1" class="w-10 h-10 rounded-xl border bdr bg-transparent cursor-pointer p-1 shrink-0">
+                <button id="addCategoryBtn" class="px-4 py-2 btn-s border rounded-xl text-sm transition whitespace-nowrap">+ Add</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Memo</label>
+              <textarea id="memo" rows="2" placeholder="Add a note..." class="inp w-full border rounded-2xl px-4 py-2.5 text-sm resize-none"></textarea>
+            </div>
+          </div>
+          <button id="sendBtn" class="mt-5 w-full bg-emerald-500 hover:bg-emerald-400 transition text-black font-semibold py-3 rounded-2xl text-sm">Send with Memo →</button>
+        </div>
+
+        <!-- Multi-send Card -->
+        <div id="multiSendCard" class="card border border-emerald-500/20 rounded-3xl p-6 mb-5 hidden">
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-2">
+              <div class="w-1.5 h-5 bg-emerald-500 rounded-full"></div>
+              <h2 class="text-base font-semibold">Multi-Send USDC</h2>
+              <span class="text-xs px-2 py-0.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-lg">NEW</span>
+            </div>
+            <button id="switchToSingleBtn" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">← Single send</button>
+          </div>
+
+          <div class="mb-4">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-xs t3 font-medium uppercase tracking-wider">Recipients</label>
+              <div class="flex gap-2">
+                <button id="addFromContactsBtn" class="text-xs px-3 py-1 btn-s border rounded-xl transition">+ From contacts</button>
+                <button id="addRecipientRowBtn" class="text-xs px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 border border-zinc-600 rounded-xl transition">+ Add address</button>
+              </div>
+            </div>
+            <div id="multiRecipientList" class="space-y-2"></div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Amount each (USDC)</label>
+              <input id="multiAmount" type="number" value="1" step="0.01" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
             </div>
             <div>
               <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Category</label>
-              <select id="category" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm font-medium"></select>
+              <select id="multiCategory" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm font-medium"></select>
             </div>
           </div>
-          <div id="savedCategoriesBar" class="hidden">
-            <label class="text-xs t3 font-medium uppercase tracking-wider block mb-2">Your categories</label>
-            <div id="savedCategoriesList" class="flex flex-wrap gap-2 mb-2"></div>
-            <div class="flex gap-2">
-              <input id="newCategoryInput" type="text" placeholder="New category name..." class="inp flex-1 border rounded-xl px-3 py-2 text-sm">
-              <input id="newCategoryColor" type="color" value="#6366f1" class="w-10 h-10 rounded-xl border bdr bg-transparent cursor-pointer p-1 shrink-0">
-              <button id="addCategoryBtn" class="px-4 py-2 btn-s border rounded-xl text-sm transition whitespace-nowrap">+ Add</button>
+          <div class="mb-3">
+            <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Memo (same for all)</label>
+            <input id="multiMemo" type="text" placeholder="e.g. Team payment, Airdrop..." class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
+          </div>
+
+          <!-- Summary -->
+          <div id="multiSummary" class="hidden mb-4 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl">
+            <div class="flex justify-between text-sm">
+              <span class="t3">Recipients:</span>
+              <span id="multiCount" class="font-semibold">0</span>
+            </div>
+            <div class="flex justify-between text-sm mt-1">
+              <span class="t3">Total:</span>
+              <span id="multiTotal" class="font-semibold text-emerald-400">0 USDC</span>
             </div>
           </div>
-          <div>
-            <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Memo</label>
-            <textarea id="memo" rows="2" placeholder="Add a note..." class="inp w-full border rounded-2xl px-4 py-2.5 text-sm resize-none"></textarea>
-          </div>
-        </div>
-        <button id="sendBtn" class="mt-5 w-full bg-emerald-500 hover:bg-emerald-400 transition text-black font-semibold py-3 rounded-2xl text-sm">Send with Memo →</button>
-      </div>
 
-      <!-- Multi-send Card -->
-      <div id="multiSendCard" class="card border border-emerald-500/20 rounded-3xl p-6 mb-5 hidden">
-        <div class="flex items-center justify-between mb-5">
-          <div class="flex items-center gap-2">
-            <div class="w-1.5 h-5 bg-emerald-500 rounded-full"></div>
-            <h2 class="text-base font-semibold">Multi-Send USDC</h2>
-            <span class="text-xs px-2 py-0.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-lg">NEW</span>
-          </div>
-          <button id="switchToSingleBtn" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">← Single send</button>
+          <button id="multiSendBtn" class="w-full bg-emerald-500 hover:bg-emerald-400 transition text-black font-semibold py-3 rounded-2xl text-sm inline-flex items-center justify-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span id="multiSendBtnLabel">Send to All →</span>
+          </button>
+        <!-- Progress -->
+          <div id="multiProgress" class="hidden mt-3 space-y-1.5"></div>
         </div>
 
-        <div class="mb-4">
-          <div class="flex justify-between items-center mb-2">
-            <label class="text-xs t3 font-medium uppercase tracking-wider">Recipients</label>
-            <div class="flex gap-2">
-              <button id="addFromContactsBtn" class="text-xs px-3 py-1 btn-s border rounded-xl transition">+ From contacts</button>
-              <button id="addRecipientRowBtn" class="text-xs px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 border border-zinc-600 rounded-xl transition">+ Add address</button>
-            </div>
-          </div>
-          <div id="multiRecipientList" class="space-y-2"></div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3 mb-3">
-          <div>
-            <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Amount each (USDC)</label>
-            <input id="multiAmount" type="number" value="1" step="0.01" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
-          </div>
-          <div>
-            <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Category</label>
-            <select id="multiCategory" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm font-medium"></select>
-          </div>
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Memo (same for all)</label>
-          <input id="multiMemo" type="text" placeholder="e.g. Team payment, Airdrop..." class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
-        </div>
-
-        <!-- Summary -->
-        <div id="multiSummary" class="hidden mb-4 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl">
-          <div class="flex justify-between text-sm">
-            <span class="t3">Recipients:</span>
-            <span id="multiCount" class="font-semibold">0</span>
-          </div>
-          <div class="flex justify-between text-sm mt-1">
-            <span class="t3">Total:</span>
-            <span id="multiTotal" class="font-semibold text-emerald-400">0 USDC</span>
-          </div>
-        </div>
-
-        <button id="multiSendBtn" class="w-full bg-emerald-500 hover:bg-emerald-400 transition text-black font-semibold py-3 rounded-2xl text-sm inline-flex items-center justify-center gap-2">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-          <span id="multiSendBtnLabel">Send to All →</span>
-        </button>
-      <!-- Progress -->
-        <div id="multiProgress" class="hidden mt-3 space-y-1.5"></div>
-      </div>
-
-      <!-- Contacts + Calendar -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
         <!-- Contacts -->
-        <div class="card border rounded-3xl p-5">
+        <div class="card border rounded-3xl p-5 mb-5">
           <div class="flex items-center gap-2 mb-4">
             <div class="w-1.5 h-5 bg-blue-500 rounded-full"></div>
             <h2 class="text-base font-semibold">Contacts</h2>
@@ -232,200 +244,36 @@
           <div id="contactsList" class="space-y-1.5 max-h-52 overflow-y-auto"></div>
         </div>
 
-        <!-- Inline Calendar -->
-        <div class="card border rounded-3xl p-5">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-2">
-              <div class="w-1.5 h-5 bg-emerald-400 rounded-full"></div>
-              <h2 class="text-base font-semibold" id="calendarTitle"></h2>
-            </div>
-            <div class="flex gap-1">
-              <button id="prevMonth" class="w-7 h-7 flex items-center justify-center hover:bg-zinc-800 rounded-lg transition t3 text-sm">←</button>
-              <button id="nextMonth" class="w-7 h-7 flex items-center justify-center hover:bg-zinc-800 rounded-lg transition t3 text-sm">→</button>
-              <button id="calendarBtn" class="w-7 h-7 flex items-center justify-center hover:bg-zinc-800 rounded-lg transition t3 text-sm" title="Expand">⤢</button>
-            </div>
-          </div>
-          <div class="flex gap-2 mb-2 flex-wrap">
-            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>Tx</span>
-            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block"></span>Sched</span>
-            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block"></span>Note</span>
-            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block"></span>Event</span>
-            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-purple-400 inline-block"></span>Custom</span>
-            <span class="flex items-center gap-1 text-xs t3"><span class="w-1.5 h-1.5 rounded-full bg-teal-400 inline-block"></span>Transfer</span>
-          </div>
-          <div id="calendarGrid" class="grid grid-cols-7 gap-0.5 text-center text-xs"></div>
-          <div id="miniDayDetail" class="hidden mt-3 pt-3 border-t bdr">
-            <div class="flex justify-between items-center mb-2">
-              <span id="miniSelectedDate" class="text-xs font-semibold"></span>
-              <span id="miniDayTotal" class="text-xs font-mono text-emerald-400"></span>
-            </div>
-            <div id="miniDayContent" class="space-y-1 max-h-36 overflow-y-auto mb-2"></div>
-            <div class="space-y-1.5">
-              <div class="flex gap-1.5">
-                <input id="miniEventTitle" type="text" placeholder="Title..." class="inp flex-1 border rounded-xl px-3 py-1.5 text-xs min-w-0">
-                <select id="miniEventType" class="inp border rounded-xl px-2 py-1.5 text-xs">
-                  <option value="note">📝 Note</option>
-                  <option value="event">🎯 Event</option>
-                  <option value="holiday">🎉 Holiday</option>
-                  <option value="custom">✏️ Custom</option>
-                  <option value="payment">💸 Transfer</option>
-                </select>
-                <button id="miniSaveEventBtn" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-medium text-xs rounded-xl transition shrink-0">+</button>
+        <!-- History lives here on the Send page (physically moved by JS between pages) -->
+        <div id="sendHistorySlot">
+          <div id="historyCard" class="card border rounded-3xl p-5 mb-5">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <div class="w-1.5 h-5 bg-orange-500 rounded-full"></div>
+                <h2 class="text-base font-semibold">History</h2>
               </div>
-              <div id="miniCustomFields" class="hidden">
-                <input id="miniCustomLabel" type="text" placeholder="Custom event name..." class="inp w-full border rounded-xl px-3 py-1.5 text-xs">
-              </div>
-              <div id="miniPaymentFields" class="hidden space-y-1.5">
-                <div class="flex gap-1.5">
-                  <input id="miniPayRecipient" type="text" placeholder="Recipient 0x..." class="inp flex-1 border rounded-xl px-3 py-1.5 text-xs min-w-0">
-                  <button id="miniPickContactBtn" class="px-2.5 py-1.5 btn-s border rounded-xl text-xs transition shrink-0">👤</button>
-                </div>
-                <input id="miniPayAmount" type="number" value="1" placeholder="Amount USDC" class="inp w-full border rounded-xl px-3 py-1.5 text-xs">
+              <div class="flex gap-2">
+                <input id="searchInput" type="text" placeholder="Search..." class="inp border rounded-xl px-3 py-1.5 text-xs w-32">
+                <button id="exportBtn" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">Export</button>
+                <button id="clearHistoryBtn" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">Clear</button>
               </div>
             </div>
+            <div id="historyList" class="space-y-1.5"></div>
+            <div id="historyToggleWrap"></div>
           </div>
         </div>
       </div>
 
-      <!-- Scheduled Payments -->
-      <div class="card border rounded-3xl p-5 mb-5">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <div class="w-1.5 h-5 bg-violet-500 rounded-full"></div>
-            <h2 class="text-base font-semibold">Scheduled Payments</h2>
-          </div>
-          <button id="toggleScheduleForm" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">+ Schedule</button>
-        </div>
-        <div id="scheduleForm" class="hidden mb-4 p-4 border bdr rounded-2xl space-y-3">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs t3 uppercase tracking-wider block mb-1">Recipient</label>
-              <input id="schedRecipient" type="text" placeholder="0x..." class="inp w-full border rounded-xl px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="text-xs t3 uppercase tracking-wider block mb-1">Amount (USDC)</label>
-              <input id="schedAmount" type="number" value="1" step="0.01" class="inp w-full border rounded-xl px-3 py-2 text-sm">
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs t3 uppercase tracking-wider block mb-1">Date and Time</label>
-              <input id="schedDateTime" type="datetime-local" class="inp w-full border rounded-xl px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="text-xs t3 uppercase tracking-wider block mb-1">Repeat</label>
-              <select id="schedRepeat" class="inp w-full border rounded-xl px-3 py-2 text-sm">
-                <option value="once">One time</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label class="text-xs t3 uppercase tracking-wider block mb-1">Memo</label>
-            <input id="schedMemo" type="text" placeholder="e.g. Monthly rent..." class="inp w-full border rounded-xl px-3 py-2 text-sm">
-          </div>
-          <div class="flex gap-2">
-            <button id="saveScheduleBtn" class="flex-1 py-2 bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/30 text-violet-400 text-sm font-medium rounded-xl transition">Save Schedule</button>
-            <button id="cancelScheduleBtn" class="px-4 py-2 btn-s border rounded-xl text-sm transition">Cancel</button>
-          </div>
-        </div>
-        <div id="scheduledList"><div class="text-center py-6 t3 text-xs">No scheduled payments</div></div>
-      </div>
+      <!-- ══════════════════════ PAGE: SCHEDULED ══════════════════════ -->
+      <div id="page-scheduled" class="hidden">
 
-      <!-- Swap Card -->
-      <div class="card border rounded-3xl p-6 mb-5">
-        <div class="flex items-center gap-2 mb-5">
-          <div class="w-1.5 h-5 bg-indigo-500 rounded-full"></div>
-          <h2 class="text-base font-semibold">Swap Tokens</h2>
-          <span class="text-xs px-2 py-0.5 bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 rounded-lg">via Circle</span>
-        </div>
-
-        <div class="relative">
-          <!-- From -->
-          <div class="border bdr rounded-2xl p-3.5" style="background:var(--card)">
-            <div class="flex justify-between items-center mb-1.5">
-              <label class="text-xs t3 font-medium uppercase tracking-wider">From</label>
-              <span id="swapBalanceIn" class="text-xs t3"></span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input id="swapAmount" type="number" value="1" step="0.01" class="flex-1 bg-transparent border-0 outline-none text-xl font-semibold p-0 min-w-0">
-              <select id="swapTokenIn" class="inp border rounded-xl px-3 py-2 text-sm font-semibold shrink-0">
-                <option value="USDC">USDC</option>
-                <option value="USDT">USDT</option>
-                <option value="EURC">EURC</option>
-                <option value="cirBTC">cirBTC</option>
-              </select>
-            </div>
+        <!-- Big Calendar -->
+        <div class="card border rounded-3xl p-5 mb-5">
+          <div class="flex justify-between items-center mb-4">
+            <button id="schedPrevMonth" class="w-9 h-9 flex items-center justify-center hover:bg-zinc-800 rounded-xl transition t3">←</button>
+            <h3 id="schedCalendarTitle" class="text-base font-semibold"></h3>
+            <button id="schedNextMonth" class="w-9 h-9 flex items-center justify-center hover:bg-zinc-800 rounded-xl transition t3">→</button>
           </div>
-
-          <!-- Direction button -->
-          <div class="flex justify-center" style="height:0;">
-            <button id="swapDirectionBtn" class="relative -top-3.5 w-8 h-8 rounded-full btn-s border-4 flex items-center justify-center text-sm z-10" style="border-color:var(--bg)" title="Reverse">⇅</button>
-          </div>
-
-          <!-- To -->
-          <div class="border bdr rounded-2xl p-3.5 -mt-1" style="background:var(--card)">
-            <div class="flex justify-between items-center mb-1.5">
-              <label class="text-xs t3 font-medium uppercase tracking-wider">To</label>
-              <span id="swapBalanceOut" class="text-xs t3"></span>
-            </div>
-            <div class="flex items-center gap-2">
-              <div id="swapEstimateOut" class="flex-1 text-xl font-semibold t3 truncate">0.00</div>
-              <select id="swapTokenOut" class="inp border rounded-xl px-3 py-2 text-sm font-semibold shrink-0">
-                <option value="EURC">EURC</option>
-                <option value="USDC">USDC</option>
-                <option value="USDT">USDT</option>
-                <option value="cirBTC">cirBTC</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div id="swapRateInfo" class="text-xs t3 text-center mt-3"></div>
-        <button id="swapBtn" class="mt-3 w-full bg-indigo-500 hover:bg-indigo-400 transition text-white font-semibold py-3 rounded-2xl text-sm">Swap →</button>
-        <div id="swapStatus" class="hidden mt-3 text-xs t3 text-center"></div>
-      </div>
-
-      <!-- History -->
-      <div class="card border rounded-3xl p-5 mb-8">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <div class="w-1.5 h-5 bg-orange-500 rounded-full"></div>
-            <h2 class="text-base font-semibold">History</h2>
-          </div>
-          <div class="flex gap-2">
-            <input id="searchInput" type="text" placeholder="Search..." class="inp border rounded-xl px-3 py-1.5 text-xs w-32">
-            <button id="exportBtn" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">Export</button>
-            <button id="clearHistoryBtn" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">Clear</button>
-          </div>
-        </div>
-        <div id="historyList" class="space-y-1.5"></div>
-        <div id="historyToggleWrap"></div>
-      </div>
-
-      <!-- Footer -->
-      <footer class="border-t bdr pt-5">
-        <div class="flex flex-wrap items-center justify-center gap-5 text-xs t3">
-          <a href="https://faucet.circle.com/" target="_blank" class="hover:text-emerald-400 transition">💧 Faucet</a>
-          <a href="https://testnet.arcscan.app/" target="_blank" class="hover:text-blue-400 transition">🔍 Explorer</a>
-          <a href="https://docs.arc.io/" target="_blank" class="hover:text-zinc-300 transition">📄 Arc Docs</a>
-          <a href="https://x.com/Memo_Journal" target="_blank" class="hover:text-zinc-300 transition font-bold">𝕏</a>
-        </div>
-        <div class="text-center text-xs t3 mt-3 opacity-50">MemoJournal · Built on Arc Testnet · 2025</div>
-      </footer>
-    </div>
-
-    <!-- Full Calendar Modal -->
-    <div id="calendarModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="bg-zinc-900 border border-zinc-700/80 rounded-3xl w-full max-w-lg">
-        <div class="flex justify-between items-center p-5 border-b border-zinc-800">
-          <button id="modalPrevMonth" class="w-8 h-8 flex items-center justify-center hover:bg-zinc-800 rounded-xl transition t3">←</button>
-          <h3 id="modalCalendarTitle" class="text-sm font-semibold"></h3>
-          <button id="modalNextMonth" class="w-8 h-8 flex items-center justify-center hover:bg-zinc-800 rounded-xl transition t3">→</button>
-        </div>
-        <div class="p-5">
           <div class="flex gap-3 mb-3 text-xs t3 flex-wrap">
             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>Transaction</span>
             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-violet-500 inline-block"></span>Scheduled</span>
@@ -435,44 +283,182 @@
             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>Custom</span>
             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-teal-400 inline-block"></span>Transfer</span>
           </div>
-          <div id="modalCalendarGrid" class="grid grid-cols-7 gap-1 text-center text-xs mb-4"></div>
-          <div id="modalDayDetails" class="hidden border-t border-zinc-800 pt-4">
+          <div id="schedCalendarGrid" class="grid grid-cols-7 gap-1 text-center text-xs mb-4"></div>
+          <div id="schedDayDetails" class="hidden border-t border-zinc-800 pt-4">
             <div class="flex justify-between items-center mb-3">
-              <div id="modalSelectedDate" class="text-sm font-semibold"></div>
-              <div id="modalDayTotal" class="font-mono text-emerald-400 text-sm"></div>
+              <div id="schedSelectedDate" class="text-sm font-semibold"></div>
+              <div id="schedDayTotal" class="font-mono text-emerald-400 text-sm"></div>
             </div>
-            <div id="modalDayContent" class="space-y-1.5 max-h-40 overflow-auto mb-3"></div>
+            <div id="schedDayContent" class="space-y-1.5 max-h-40 overflow-auto mb-3"></div>
             <div class="bg-zinc-800/40 border border-zinc-700/50 rounded-2xl p-3 space-y-2">
               <div class="text-xs t3 font-medium uppercase tracking-wider">Add to this day</div>
-              <input id="modalEventTitle" type="text" placeholder="Title..." class="inp w-full border rounded-xl px-3 py-2 text-sm">
+              <input id="schedEventTitle" type="text" placeholder="Title..." class="inp w-full border rounded-xl px-3 py-2 text-sm">
               <div class="flex gap-2">
-                <select id="modalEventType" class="flex-1 inp border rounded-xl px-3 py-2 text-xs">
+                <select id="schedEventType" class="flex-1 inp border rounded-xl px-3 py-2 text-xs">
                   <option value="note">📝 Note</option>
                   <option value="event">🎯 Event</option>
                   <option value="holiday">🎉 Holiday</option>
                   <option value="custom">✏️ Custom</option>
                   <option value="payment">💸 Transfer</option>
                 </select>
-                <input id="modalEventColor" type="color" value="#6366f1" class="w-10 h-9 rounded-xl border border-zinc-700 bg-transparent cursor-pointer p-1">
-                <button id="modalSaveEventBtn" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-medium text-xs rounded-xl transition">Save</button>
+                <input id="schedEventColor" type="color" value="#6366f1" class="w-10 h-9 rounded-xl border border-zinc-700 bg-transparent cursor-pointer p-1">
+                <button id="schedSaveEventBtn" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-medium text-xs rounded-xl transition">Save</button>
               </div>
-              <div id="modalCustomFields" class="hidden">
-                <input id="modalCustomLabel" type="text" placeholder="Custom event name..." class="inp w-full border rounded-xl px-3 py-2 text-xs">
+              <div id="schedCustomFields" class="hidden">
+                <input id="schedCustomLabel" type="text" placeholder="Custom event name..." class="inp w-full border rounded-xl px-3 py-2 text-xs">
               </div>
-              <div id="modalPaymentFields" class="hidden space-y-2">
+              <div id="schedPaymentFields" class="hidden space-y-2">
                 <div class="flex gap-2">
-                  <input id="modalPayRecipient" type="text" placeholder="Recipient 0x..." class="inp flex-1 border rounded-xl px-3 py-2 text-xs min-w-0">
-                  <button id="modalPickContactBtn" class="px-3 py-2 btn-s border rounded-xl text-xs transition shrink-0">👤</button>
+                  <input id="schedPayRecipient" type="text" placeholder="Recipient 0x..." class="inp flex-1 border rounded-xl px-3 py-2 text-xs min-w-0">
+                  <button id="schedPickContactBtn" class="px-3 py-2 btn-s border rounded-xl text-xs transition shrink-0">👤</button>
                 </div>
-                <input id="modalPayAmount" type="number" value="1" class="inp w-full border rounded-xl px-3 py-2 text-xs">
+                <input id="schedPayAmount" type="number" value="1" class="inp w-full border rounded-xl px-3 py-2 text-xs">
               </div>
             </div>
           </div>
         </div>
-        <div class="px-5 pb-5">
-          <button id="closeCalendar" class="w-full py-2.5 btn-s border rounded-2xl text-sm transition">Close</button>
+
+        <!-- Scheduled Payments -->
+        <div class="card border rounded-3xl p-5 mb-5">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <div class="w-1.5 h-5 bg-violet-500 rounded-full"></div>
+              <h2 class="text-base font-semibold">Scheduled Payments</h2>
+            </div>
+            <button id="toggleScheduleForm" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">+ Schedule</button>
+          </div>
+          <div id="scheduleForm" class="hidden mb-4 p-4 border bdr rounded-2xl space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs t3 uppercase tracking-wider block mb-1">Recipient</label>
+                <input id="schedRecipient" type="text" placeholder="0x..." class="inp w-full border rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="text-xs t3 uppercase tracking-wider block mb-1">Amount (USDC)</label>
+                <input id="schedAmount" type="number" value="1" step="0.01" class="inp w-full border rounded-xl px-3 py-2 text-sm">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs t3 uppercase tracking-wider block mb-1">Date and Time</label>
+                <input id="schedDateTime" type="datetime-local" class="inp w-full border rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="text-xs t3 uppercase tracking-wider block mb-1">Repeat</label>
+                <select id="schedRepeat" class="inp w-full border rounded-xl px-3 py-2 text-sm">
+                  <option value="once">One time</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="text-xs t3 uppercase tracking-wider block mb-1">Memo</label>
+              <input id="schedMemo" type="text" placeholder="e.g. Monthly rent..." class="inp w-full border rounded-xl px-3 py-2 text-sm">
+            </div>
+            <div class="flex gap-2">
+              <button id="saveScheduleBtn" class="flex-1 py-2 bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/30 text-violet-400 text-sm font-medium rounded-xl transition">Save Schedule</button>
+              <button id="cancelScheduleBtn" class="px-4 py-2 btn-s border rounded-xl text-sm transition">Cancel</button>
+            </div>
+          </div>
+          <div id="scheduledList"><div class="text-center py-6 t3 text-xs">No scheduled payments</div></div>
+        </div>
+
+        <!-- History lives here on the Scheduled page (physically moved by JS between pages) -->
+        <div id="schedHistorySlot"></div>
+      </div>
+
+      <!-- ══════════════════════ PAGE: SWAP ══════════════════════ -->
+      <div id="page-swap" class="hidden">
+
+        <!-- Swap Card -->
+        <div class="card border rounded-3xl p-6 mb-5">
+          <div class="flex items-center gap-2 mb-5">
+            <div class="w-1.5 h-5 bg-indigo-500 rounded-full"></div>
+            <h2 class="text-base font-semibold">Swap Tokens</h2>
+            <span class="text-xs px-2 py-0.5 bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 rounded-lg">via Circle</span>
+          </div>
+
+          <div class="relative">
+            <!-- From -->
+            <div class="border bdr rounded-2xl p-3.5" style="background:var(--card)">
+              <div class="flex justify-between items-center mb-1.5">
+                <label class="text-xs t3 font-medium uppercase tracking-wider">From</label>
+                <span id="swapBalanceIn" class="text-xs t3"></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="swapAmount" type="number" value="1" step="0.01" class="flex-1 bg-transparent border-0 outline-none text-xl font-semibold p-0 min-w-0">
+                <select id="swapTokenIn" class="inp border rounded-xl px-3 py-2 text-sm font-semibold shrink-0">
+                  <option value="USDC">USDC</option>
+                  <option value="USDT">USDT</option>
+                  <option value="EURC">EURC</option>
+                  <option value="cirBTC">cirBTC</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Direction button -->
+            <div class="flex justify-center" style="height:0;">
+              <button id="swapDirectionBtn" class="relative -top-3.5 w-8 h-8 rounded-full btn-s border-4 flex items-center justify-center text-sm z-10" style="border-color:var(--bg)" title="Reverse">⇅</button>
+            </div>
+
+            <!-- To -->
+            <div class="border bdr rounded-2xl p-3.5 -mt-1" style="background:var(--card)">
+              <div class="flex justify-between items-center mb-1.5">
+                <label class="text-xs t3 font-medium uppercase tracking-wider">To</label>
+                <span id="swapBalanceOut" class="text-xs t3"></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div id="swapEstimateOut" class="flex-1 text-xl font-semibold t3 truncate">0.00</div>
+                <select id="swapTokenOut" class="inp border rounded-xl px-3 py-2 text-sm font-semibold shrink-0">
+                  <option value="EURC">EURC</option>
+                  <option value="USDC">USDC</option>
+                  <option value="USDT">USDT</option>
+                  <option value="cirBTC">cirBTC</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div id="swapRateInfo" class="text-xs t3 text-center mt-3"></div>
+          <button id="swapBtn" class="mt-3 w-full bg-indigo-500 hover:bg-indigo-400 transition text-white font-semibold py-3 rounded-2xl text-sm">Swap →</button>
+          <div id="swapStatus" class="hidden mt-3 text-xs t3 text-center"></div>
+        </div>
+
+        <!-- Swap History -->
+        <div class="card border rounded-3xl p-5 mb-5">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-1.5 h-5 bg-indigo-400 rounded-full"></div>
+            <h2 class="text-base font-semibold">Swap History</h2>
+          </div>
+          <div id="swapHistoryList" class="space-y-1.5"></div>
         </div>
       </div>
+
+      <!-- ══════════════════════ PAGE: NFT GIFTS ══════════════════════ -->
+      <div id="page-nft" class="hidden">
+        <div class="card border rounded-3xl p-10 mb-5 text-center">
+          <div class="flex items-center justify-center gap-2 mb-2">
+            <h2 class="text-xl font-semibold">NFT Gifts</h2>
+            <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 rounded-md align-middle">Soon</span>
+          </div>
+          <p class="t3 text-sm max-w-sm mx-auto mt-3">
+            A collection of on-chain NFT gifts you'll be able to send alongside your USDC transfers — coming soon.
+          </p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="border-t bdr pt-5 mt-3">
+        <div class="flex flex-wrap items-center justify-center gap-5 text-xs t3">
+          <a href="https://faucet.circle.com/" target="_blank" class="hover:text-emerald-400 transition">💧 Faucet</a>
+          <a href="https://testnet.arcscan.app/" target="_blank" class="hover:text-blue-400 transition">🔍 Explorer</a>
+          <a href="https://docs.arc.io/" target="_blank" class="hover:text-zinc-300 transition">📄 Arc Docs</a>
+          <a href="https://x.com/Memo_Journal" target="_blank" class="hover:text-zinc-300 transition font-bold">𝕏</a>
+        </div>
+        <div class="text-center text-xs t3 mt-3 opacity-50">MemoJournal · Built on Arc Testnet · 2025</div>
+      </footer>
     </div>
 
     <script type="module" src="/src/main.js"></script>

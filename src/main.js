@@ -25,7 +25,7 @@ const $ = id => document.getElementById(id);
 let account = null;
 let allHistory = [], allContacts = [], allCategories = [], allCalendarEvents = [], allScheduled = [];
 let currentCalDate = new Date();
-let selectedMiniDay = null, selectedModalDay = null;
+let selectedSchedDay = null;
 let multiRecipients = [];
 let historyExpanded = false, lastHistoryFull = [];
 const HISTORY_PAGE_SIZE = 10;
@@ -308,13 +308,14 @@ $("newCategoryInput").addEventListener("keydown", e => { if (e.key === "Enter") 
 window.addEventListener("load", async () => {
   createContactModal();
   updateCategorySelect();
-  renderCalendar();
+  renderSchedCalendar();
+  initPageNav();
   if (!window.ethereum) return;
   try {
     const accounts = await window.ethereum.request({ method: "eth_accounts" });
     if (accounts.length > 0) {
       account = accounts[0]; updateWalletUI(); await switchToArc();
-      await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances()]);
+      await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances(), loadSwapHistory()]);
     }
   } catch (e) { console.log("Auto-connect:", e); }
 });
@@ -325,7 +326,7 @@ $("connectBtn").onclick = async () => {
   try {
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
     account = accounts[0]; updateWalletUI(); await switchToArc();
-    await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances()]);
+    await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances(), loadSwapHistory()]);
   } catch (err) { showToast("Error: " + err.message, "error"); }
 };
 function updateWalletUI() {
@@ -348,11 +349,11 @@ function disconnectWallet() {
     try {
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
       account = accounts[0]; updateWalletUI(); await switchToArc();
-      await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances()]);
+      await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances(), loadSwapHistory()]);
     } catch (err) { showToast("Error: " + err.message, "error"); }
   };
   historyExpanded = false;
-  renderHistory([]); renderContacts([]);
+  renderHistory([]); renderContacts([]); renderSwapHistory([]);
   $("scheduledList").innerHTML = '<div class="text-center py-6 t3 text-xs">No scheduled payments</div>';
   updateSwapBalances();
   showToast("Wallet disconnected", "info");
@@ -561,140 +562,42 @@ setInterval(()=>{if(account)loadScheduled();},60000);
 async function loadCalendarEvents(){
   if(!account)return;
   const{data}=await supabase.from("calendar_events").select("*").eq("wallet",account.toLowerCase());
-  allCalendarEvents=data||[]; renderCalendar();
+  allCalendarEvents=data||[]; renderSchedCalendar();
 }
 function getDateKey(y,m,d){const pad=n=>String(n).padStart(2,"0");return y+"-"+pad(m+1)+"-"+pad(d);}
 
-$("prevMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()-1);renderCalendar();$("miniDayDetail").classList.add("hidden");selectedMiniDay=null;};
-$("nextMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()+1);renderCalendar();$("miniDayDetail").classList.add("hidden");selectedMiniDay=null;};
-$("miniEventType").addEventListener("change",()=>{const t=$("miniEventType").value;$("miniPaymentFields").classList.toggle("hidden",t!=="payment");$("miniCustomFields").classList.toggle("hidden",t!=="custom");});
-$("miniPickContactBtn").onclick=()=>{if(!allContacts.length){showToast("No contacts yet","info");return;}openContactPicker((address,name)=>{$("miniPayRecipient").value=address;showToast("Selected: "+name,"info");});};
-
-$("miniSaveEventBtn").onclick=async()=>{
+// ─── SCHEDULE PAGE CALENDAR (big, permanent — not a popup) ────────────
+$("schedPrevMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()-1);renderSchedCalendar();};
+$("schedNextMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()+1);renderSchedCalendar();};
+$("schedEventType").addEventListener("change",()=>{const t=$("schedEventType").value;$("schedPaymentFields").classList.toggle("hidden",t!=="payment");$("schedCustomFields").classList.toggle("hidden",t!=="custom");$("schedEventColor").value=TYPE_COLORS[t]||"#6366f1";});
+$("schedPickContactBtn").onclick=()=>{if(!allContacts.length){showToast("No contacts yet","info");return;}openContactPicker((address,name)=>{$("schedPayRecipient").value=address;showToast("Selected: "+name,"info");});};
+$("schedSaveEventBtn").onclick=async()=>{
   if(!account){showToast("Connect wallet first!","error");return;}
-  if(!selectedMiniDay){showToast("Select a day first","error");return;}
-  const type=$("miniEventType").value;
+  if(!selectedSchedDay){showToast("Select a day first","error");return;}
+  const type=$("schedEventType").value,color=$("schedEventColor").value;
   if(type==="payment"){
-    const recipient=$("miniPayRecipient").value.trim(),amount=$("miniPayAmount").value,memo=$("miniEventTitle").value.trim()||"Scheduled transfer";
-    if(!recipient||!amount){showToast("Fill in recipient and amount","error");return;}
-    const pad=n=>String(n).padStart(2,"0");
-    const dt=selectedMiniDay.y+"-"+pad(selectedMiniDay.m+1)+"-"+pad(selectedMiniDay.d)+"T09:00";
-    const{error}=await supabase.from("scheduled_payments").insert({wallet:account.toLowerCase(),recipient,amount:parseFloat(amount),memo,category:"Payment",scheduled_at:new Date(dt).toISOString(),repeat_type:"once",status:"pending"});
-    if(error){showToast("Error: "+error.message,"error");return;}
-    await loadScheduled();showToast("Transfer scheduled ✓","success");
-  }else{
-    const title=type==="custom"?$("miniCustomLabel").value.trim():$("miniEventTitle").value.trim();
-    if(!title){showToast("Enter a title","error");return;}
-    const color=TYPE_COLORS[type]||"#6366f1";
-    const dateKey=getDateKey(selectedMiniDay.y,selectedMiniDay.m,selectedMiniDay.d);
-    const{error}=await supabase.from("calendar_events").insert({wallet:account.toLowerCase(),date:dateKey,title,type,color});
-    if(error){showToast("Error: "+error.message,"error");return;}
-    await loadCalendarEvents();showToast("Saved ✓","success");
-  }
-  $("miniEventTitle").value="";$("miniPayRecipient").value="";$("miniPayAmount").value="1";
-  if($("miniCustomLabel"))$("miniCustomLabel").value="";
-  if(selectedMiniDay)showMiniDayDetail(selectedMiniDay.d,selectedMiniDay.y,selectedMiniDay.m);
-};
-
-function renderCalendar(){
-  const year=currentCalDate.getFullYear(),month=currentCalDate.getMonth();
-  $("calendarTitle").textContent=new Date(year,month).toLocaleString("en-US",{month:"long",year:"numeric"});
-  const firstDay=new Date(year,month,1).getDay(),daysInMonth=new Date(year,month+1,0).getDate();
-  const txByDay={},schedByDay={},eventsByDay={};
-  allHistory.forEach(tx=>{const d=new Date(tx.created_at);if(d.getFullYear()===year&&d.getMonth()===month){const k=d.getDate();txByDay[k]=(txByDay[k]||0)+1;}});
-  allScheduled.forEach(p=>{const d=new Date(p.scheduled_at);if(d.getFullYear()===year&&d.getMonth()===month){const k=d.getDate();schedByDay[k]=(schedByDay[k]||0)+1;}});
-  allCalendarEvents.forEach(e=>{const[ey,em,ed]=e.date.split("-").map(Number);if(ey===year&&em===month+1){eventsByDay[ed]=eventsByDay[ed]||[];eventsByDay[ed].push(e);}});
-  const dn=["Mo","Tu","We","Th","Fr","Sa","Su"];
-  let html=dn.map(d=>'<div class="t3 text-xs py-1 font-medium">'+d+'</div>').join("");
-  const startOffset=(firstDay+6)%7;
-  for(let i=0;i<startOffset;i++)html+="<div></div>";
-  const today=new Date();
-  const isSelMonth=selectedMiniDay&&selectedMiniDay.y===year&&selectedMiniDay.m===month;
-  for(let day=1;day<=daysInMonth;day++){
-    const isToday=today.getFullYear()===year&&today.getMonth()===month&&today.getDate()===day;
-    const isSelected=isSelMonth&&selectedMiniDay.d===day;
-    const hasTx=txByDay[day],hasSched=schedByDay[day],hasEv=eventsByDay[day];
-    const dots=[];
-    if(hasTx)dots.push('<span class="w-1 h-1 rounded-full bg-emerald-500 inline-block"></span>');
-    if(hasSched)dots.push('<span class="w-1 h-1 rounded-full bg-violet-500 inline-block"></span>');
-    if(hasEv)hasEv.slice(0,2).forEach(e=>dots.push('<span class="w-1 h-1 rounded-full inline-block" style="background:'+e.color+'"></span>'));
-    let cls="py-1 rounded-lg text-center cursor-pointer flex flex-col items-center gap-0.5 transition text-xs ";
-    if(isSelected)cls+="bg-indigo-500/30 outline outline-2 outline-indigo-500 font-semibold text-indigo-300 ";
-    else if(isToday)cls+="ring-1 ring-emerald-500/70 bg-emerald-500/15 text-emerald-400 font-semibold ";
-    else if(hasTx||hasSched||hasEv)cls+="font-medium hover:bg-zinc-800/40 ";
-    else cls+="t3 hover:bg-zinc-800/40 ";
-    html+='<div onclick="showMiniDayDetail('+day+','+year+','+month+')" class="'+cls+'">'+day+(dots.length?'<div class="flex gap-0.5">'+dots.join("")+'</div>':'<div class="h-1.5"></div>')+'</div>';
-  }
-  $("calendarGrid").innerHTML=html;
-}
-
-window.showMiniDayDetail=(day,year,month)=>{
-  selectedMiniDay={d:day,y:year,m:month};
-  renderCalendar();
-  const dateKey=getDateKey(year,month,day);
-  const txs=allHistory.filter(tx=>{const d=new Date(tx.created_at);return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()===day;});
-  const scheds=allScheduled.filter(p=>{const d=new Date(p.scheduled_at);return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()===day;});
-  const events=allCalendarEvents.filter(e=>e.date===dateKey);
-  $("miniSelectedDate").textContent=new Date(year,month,day).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
-  const total=txs.reduce((s,tx)=>s+parseFloat(tx.amount),0);
-  $("miniDayTotal").textContent=txs.length?total.toFixed(2)+" USDC":"";
-  let html="";
-  events.forEach(e=>{
-    html+='<div class="flex items-center justify-between text-xs py-1 px-2 rounded-lg" style="background:'+e.color+'18">'+
-    '<span>'+(TYPE_ICONS[e.type]||"📝")+' '+e.title+'</span>'+
-    '<div class="flex gap-1 ml-2 shrink-0">'+
-    '<button onclick="editMiniEvent('+e.id+',\''+e.title.replace(/'/g,"\\'")+'\',\''+e.type+'\')" class="t3 hover:text-blue-400 transition">✎</button>'+
-    '<button onclick="deleteMiniEvent('+e.id+')" class="t3 hover:text-red-400 transition">✕</button>'+
-    '</div></div>';
-  });
-  scheds.forEach(p=>{html+='<div class="text-xs py-1 px-2 bg-violet-500/10 rounded-lg text-violet-300">💸 '+(getContactName(p.recipient)||p.recipient.slice(0,8)+"...")+" · "+p.amount+' USDC</div>';});
-  txs.forEach(tx=>{
-    html+='<div class="flex justify-between text-xs py-1 px-2 rounded-lg" style="background:var(--card)">'+
-    '<div class="flex flex-col min-w-0"><span class="t2 font-medium">'+(getContactName(tx.recipient)||tx.recipient.slice(0,6)+"...")+'</span>'+
-    (tx.memo?'<span class="t3 text-xs truncate">💬 '+tx.memo+'</span>':'')+'</div>'+
-    '<span class="text-emerald-400 font-semibold shrink-0 ml-2">'+tx.amount+' USDC</span></div>';
-  });
-  if(!html)html='<p class="t3 text-xs text-center py-1">Nothing here yet</p>';
-  $("miniDayContent").innerHTML=html;
-  $("miniDayDetail").classList.remove("hidden");
-};
-window.editMiniEvent=async(id,oldTitle,type)=>{const n=prompt("Edit "+(type||"event")+":",oldTitle);if(!n||n.trim()===oldTitle)return;await supabase.from("calendar_events").update({title:n.trim()}).eq("id",id);await loadCalendarEvents();if(selectedMiniDay)showMiniDayDetail(selectedMiniDay.d,selectedMiniDay.y,selectedMiniDay.m);showToast("Updated ✓","success");};
-window.deleteMiniEvent=async id=>{await supabase.from("calendar_events").delete().eq("id",id);await loadCalendarEvents();if(selectedMiniDay)showMiniDayDetail(selectedMiniDay.d,selectedMiniDay.y,selectedMiniDay.m);showToast("Deleted","info");};
-
-// ─── FULL CALENDAR MODAL ─────────────────────────────────────────────
-$("calendarBtn").onclick=()=>{$("calendarModal").classList.remove("hidden");renderModalCalendar();};
-$("closeCalendar").onclick=()=>$("calendarModal").classList.add("hidden");
-$("modalPrevMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()-1);renderModalCalendar();renderCalendar();};
-$("modalNextMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()+1);renderModalCalendar();renderCalendar();};
-$("modalEventType").addEventListener("change",()=>{const t=$("modalEventType").value;$("modalPaymentFields").classList.toggle("hidden",t!=="payment");$("modalCustomFields").classList.toggle("hidden",t!=="custom");$("modalEventColor").value=TYPE_COLORS[t]||"#6366f1";});
-$("modalPickContactBtn").onclick=()=>{if(!allContacts.length){showToast("No contacts yet","info");return;}openContactPicker((address,name)=>{$("modalPayRecipient").value=address;showToast("Selected: "+name,"info");});};
-$("modalSaveEventBtn").onclick=async()=>{
-  if(!account){showToast("Connect wallet first!","error");return;}
-  if(!selectedModalDay){showToast("Select a day first","error");return;}
-  const type=$("modalEventType").value,color=$("modalEventColor").value;
-  if(type==="payment"){
-    const r=$("modalPayRecipient").value.trim(),a=$("modalPayAmount").value,memo=$("modalEventTitle").value.trim()||"Scheduled transfer";
+    const r=$("schedPayRecipient").value.trim(),a=$("schedPayAmount").value,memo=$("schedEventTitle").value.trim()||"Scheduled transfer";
     if(!r||!a){showToast("Fill recipient and amount","error");return;}
     const pad=n=>String(n).padStart(2,"0");
-    const dt=selectedModalDay.y+"-"+pad(selectedModalDay.m+1)+"-"+pad(selectedModalDay.d)+"T09:00";
+    const dt=selectedSchedDay.y+"-"+pad(selectedSchedDay.m+1)+"-"+pad(selectedSchedDay.d)+"T09:00";
     await supabase.from("scheduled_payments").insert({wallet:account.toLowerCase(),recipient:r,amount:parseFloat(a),memo,category:"Payment",scheduled_at:new Date(dt).toISOString(),repeat_type:"once",status:"pending"});
     await loadScheduled();showToast("Transfer scheduled ✓","success");
   }else{
-    const title=type==="custom"?$("modalCustomLabel").value.trim():$("modalEventTitle").value.trim();
+    const title=type==="custom"?$("schedCustomLabel").value.trim():$("schedEventTitle").value.trim();
     if(!title){showToast("Enter a title","error");return;}
-    const dateKey=getDateKey(selectedModalDay.y,selectedModalDay.m,selectedModalDay.d);
+    const dateKey=getDateKey(selectedSchedDay.y,selectedSchedDay.m,selectedSchedDay.d);
     await supabase.from("calendar_events").insert({wallet:account.toLowerCase(),date:dateKey,title,type,color});
     await loadCalendarEvents();showToast("Saved ✓","success");
   }
-  $("modalEventTitle").value="";$("modalPayRecipient").value="";$("modalPayAmount").value="1";$("modalCustomLabel").value="";
-  renderModalCalendar();showModalDayDetail(selectedModalDay.d,selectedModalDay.y,selectedModalDay.m);
+  $("schedEventTitle").value="";$("schedPayRecipient").value="";$("schedPayAmount").value="1";$("schedCustomLabel").value="";
+  renderSchedCalendar();showSchedDayDetail(selectedSchedDay.d,selectedSchedDay.y,selectedSchedDay.m);
 };
-window.editModalEvent=async(id,oldTitle,type)=>{const n=prompt("Edit "+(type||"event")+":",oldTitle);if(!n||n.trim()===oldTitle)return;await supabase.from("calendar_events").update({title:n.trim()}).eq("id",id);await loadCalendarEvents();renderModalCalendar();if(selectedModalDay)showModalDayDetail(selectedModalDay.d,selectedModalDay.y,selectedModalDay.m);showToast("Updated ✓","success");};
-window.deleteModalEvent=async id=>{await supabase.from("calendar_events").delete().eq("id",id);await loadCalendarEvents();renderModalCalendar();if(selectedModalDay)showModalDayDetail(selectedModalDay.d,selectedModalDay.y,selectedModalDay.m);showToast("Deleted","info");};
+window.editSchedEvent=async(id,oldTitle,type)=>{const n=prompt("Edit "+(type||"event")+":",oldTitle);if(!n||n.trim()===oldTitle)return;await supabase.from("calendar_events").update({title:n.trim()}).eq("id",id);await loadCalendarEvents();renderSchedCalendar();if(selectedSchedDay)showSchedDayDetail(selectedSchedDay.d,selectedSchedDay.y,selectedSchedDay.m);showToast("Updated ✓","success");};
+window.deleteSchedEvent=async id=>{await supabase.from("calendar_events").delete().eq("id",id);await loadCalendarEvents();renderSchedCalendar();if(selectedSchedDay)showSchedDayDetail(selectedSchedDay.d,selectedSchedDay.y,selectedSchedDay.m);showToast("Deleted","info");};
 
-function renderModalCalendar(){
+function renderSchedCalendar(){
   const year=currentCalDate.getFullYear(),month=currentCalDate.getMonth();
-  $("modalCalendarTitle").textContent=new Date(year,month).toLocaleString("en-US",{month:"long",year:"numeric"});
+  $("schedCalendarTitle").textContent=new Date(year,month).toLocaleString("en-US",{month:"long",year:"numeric"});
   const firstDay=new Date(year,month,1).getDay(),daysInMonth=new Date(year,month+1,0).getDate();
   const txByDay={},schedByDay={},eventsByDay={};
   allHistory.forEach(tx=>{const d=new Date(tx.created_at);if(d.getFullYear()===year&&d.getMonth()===month){const k=d.getDate();txByDay[k]=(txByDay[k]||0)+1;}});
@@ -705,42 +608,42 @@ function renderModalCalendar(){
   const startOffset=(firstDay+6)%7;
   for(let i=0;i<startOffset;i++)html+="<div></div>";
   const today=new Date();
-  const isSelMonth=selectedModalDay&&selectedModalDay.y===year&&selectedModalDay.m===month;
+  const isSelMonth=selectedSchedDay&&selectedSchedDay.y===year&&selectedSchedDay.m===month;
   for(let day=1;day<=daysInMonth;day++){
     const isToday=today.getFullYear()===year&&today.getMonth()===month&&today.getDate()===day;
-    const isSelected=isSelMonth&&selectedModalDay.d===day;
+    const isSelected=isSelMonth&&selectedSchedDay.d===day;
     const hasTx=txByDay[day],hasSched=schedByDay[day],hasEv=eventsByDay[day];
     const dots=[];
     if(hasTx)dots.push('<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>');
     if(hasSched)dots.push('<span class="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block"></span>');
     if(hasEv)hasEv.slice(0,3).forEach(e=>dots.push('<span class="w-1.5 h-1.5 rounded-full inline-block" style="background:'+e.color+'"></span>'));
     const evNames=hasEv?hasEv.slice(0,1).map(e=>'<div class="text-xs leading-tight truncate px-0.5" style="color:'+e.color+'">'+(TYPE_ICONS[e.type]||"")+" "+e.title+'</div>').join(""):"";
-    let cls="py-1.5 rounded-xl cursor-pointer flex flex-col items-center hover:bg-zinc-800/60 transition min-h-[48px] justify-start pt-1.5 ";
+    let cls="py-2 rounded-xl cursor-pointer flex flex-col items-center hover:bg-zinc-800/60 transition min-h-[56px] justify-start pt-1.5 ";
     if(isSelected)cls+="bg-indigo-500/25 outline outline-2 outline-indigo-500 text-indigo-300 font-semibold ";
     else if(isToday)cls+="ring-1 ring-emerald-500/70 bg-emerald-500/15 text-emerald-400 font-semibold ";
     else cls+=(hasTx||hasSched||hasEv?"text-white ":"text-zinc-500 ");
-    html+='<div onclick="showModalDayDetail('+day+','+year+','+month+')" class="'+cls+'"><span class="text-xs">'+day+'</span>'+(dots.length?'<div class="flex gap-0.5 mt-0.5">'+dots.join("")+'</div>':'')+evNames+'</div>';
+    html+='<div onclick="showSchedDayDetail('+day+','+year+','+month+')" class="'+cls+'"><span class="text-xs">'+day+'</span>'+(dots.length?'<div class="flex gap-0.5 mt-0.5">'+dots.join("")+'</div>':'')+evNames+'</div>';
   }
-  $("modalCalendarGrid").innerHTML=html;
+  $("schedCalendarGrid").innerHTML=html;
 }
 
-window.showModalDayDetail=(day,year,month)=>{
-  selectedModalDay={d:day,y:year,m:month};
-  renderModalCalendar();
+window.showSchedDayDetail=(day,year,month)=>{
+  selectedSchedDay={d:day,y:year,m:month};
+  renderSchedCalendar();
   const dateKey=getDateKey(year,month,day);
   const txs=allHistory.filter(tx=>{const d=new Date(tx.created_at);return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()===day;});
   const scheds=allScheduled.filter(p=>{const d=new Date(p.scheduled_at);return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()===day;});
   const events=allCalendarEvents.filter(e=>e.date===dateKey);
-  $("modalSelectedDate").textContent=new Date(year,month,day).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+  $("schedSelectedDate").textContent=new Date(year,month,day).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
   const total=txs.reduce((s,tx)=>s+parseFloat(tx.amount),0);
-  $("modalDayTotal").textContent=txs.length?total.toFixed(2)+" USDC":"";
+  $("schedDayTotal").textContent=txs.length?total.toFixed(2)+" USDC":"";
   let html="";
   events.forEach(e=>{
     html+='<div class="flex items-center justify-between p-2 rounded-xl text-xs" style="background:'+e.color+'18;border:1px solid '+e.color+'30">'+
     '<span>'+(TYPE_ICONS[e.type]||"📝")+' '+e.title+'</span>'+
     '<div class="flex gap-1.5 ml-2 shrink-0">'+
-    '<button onclick="editModalEvent('+e.id+',\''+e.title.replace(/'/g,"\\'")+'\',\''+e.type+'\')" class="text-zinc-500 hover:text-blue-400 transition">✎</button>'+
-    '<button onclick="deleteModalEvent('+e.id+')" class="text-zinc-500 hover:text-red-400 transition">✕</button>'+
+    '<button onclick="editSchedEvent('+e.id+',\''+e.title.replace(/'/g,"\\'")+'\',\''+e.type+'\')" class="text-zinc-500 hover:text-blue-400 transition">✎</button>'+
+    '<button onclick="deleteSchedEvent('+e.id+')" class="text-zinc-500 hover:text-red-400 transition">✕</button>'+
     '</div></div>';
   });
   scheds.forEach(p=>{html+='<div class="p-2 bg-violet-500/10 border border-violet-500/20 rounded-xl text-xs text-violet-300">💸 '+(getContactName(p.recipient)||p.recipient.slice(0,8)+"...")+" · "+p.amount+' USDC</div>';});
@@ -752,8 +655,8 @@ window.showModalDayDetail=(day,year,month)=>{
     '</div>';
   });
   if(!html)html='<p class="text-zinc-600 text-xs text-center py-2">Nothing here yet</p>';
-  $("modalDayContent").innerHTML=html;
-  $("modalDayDetails").classList.remove("hidden");
+  $("schedDayContent").innerHTML=html;
+  $("schedDayDetails").classList.remove("hidden");
 };
 
 // ─── SWAP ────────────────────────────────────────────────────────────
@@ -855,7 +758,7 @@ $("swapBtn").onclick = async () => {
     if (!resp.ok) throw new Error(result.error || "Swap failed");
 
     showToast('✅ Swapped! Received ' + result.amountOut + ' ' + tokenOut + '. <a href="' + result.explorerUrl + '" target="_blank" class="underline">tx ↗</a>', "success");
-    await Promise.all([loadBalance(), updateSwapBalances()]);
+    await Promise.all([loadBalance(), updateSwapBalances(), loadSwapHistory()]);
     status.classList.add("hidden");
   } catch (err) {
     showToast("Swap error: " + err.message, "error");
@@ -864,3 +767,46 @@ $("swapBtn").onclick = async () => {
     btn.disabled = false; btn.textContent = "Swap →";
   }
 };
+
+// ─── SWAP HISTORY ────────────────────────────────────────────────────
+async function loadSwapHistory() {
+  if (!account) return;
+  const { data } = await supabase.from("swaps").select("*").eq("wallet", account.toLowerCase()).order("created_at", { ascending: false }).limit(50);
+  renderSwapHistory(data || []);
+}
+function renderSwapHistory(items) {
+  const el = $("swapHistoryList");
+  if (!el) return;
+  if (!items.length) { el.innerHTML = '<div class="text-center py-8 t3 text-sm">No swaps yet</div>'; return; }
+  const statusColor = { done: "#10b981", pending: "#f59e0b", failed: "#ef4444" };
+  el.innerHTML = items.map(s => {
+    const color = statusColor[s.status] || "#6b7280";
+    const date = new Date(s.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return (
+      '<div class="flex items-center gap-2 px-3 py-2 rounded-xl border bdr text-xs" style="background:var(--card)">' +
+      '<span class="px-2 py-0.5 rounded-lg text-xs font-semibold shrink-0" style="background:' + color + '22;color:' + color + '">' + s.status + '</span>' +
+      '<span class="flex-1 min-w-0 truncate font-medium">' + s.token_in + ' → ' + s.token_out + '</span>' +
+      '<span class="text-indigo-400 font-semibold shrink-0">' + s.amount_in + ' ' + s.token_in + (s.amount_out ? ' → ' + parseFloat(s.amount_out).toFixed(4) + ' ' + s.token_out : '') + '</span>' +
+      '<span class="t3 shrink-0">' + date + '</span>' +
+      (s.payout_txhash ? '<a href="https://testnet.arcscan.app/tx/' + s.payout_txhash + '" target="_blank" class="t3 hover:text-blue-400 transition shrink-0">↗</a>' : '') +
+      '</div>'
+    );
+  }).join("");
+}
+
+// ─── PAGE NAVIGATION (Send / Scheduled / Swap / NFT Gifts) ────────────
+const PAGES = ["send", "scheduled", "swap", "nft"];
+function initPageNav() {
+  const historyCardEl = $("historyCard");
+  document.querySelectorAll(".page-tab").forEach(btn => {
+    btn.onclick = () => {
+      const page = btn.dataset.page;
+      PAGES.forEach(p => {
+        $("page-" + p).classList.toggle("hidden", p !== page);
+        document.querySelector('.page-tab[data-page="' + p + '"]').classList.toggle("page-tab-active", p === page);
+      });
+      if (page === "send") $("sendHistorySlot").appendChild(historyCardEl);
+      if (page === "scheduled") $("schedHistorySlot").appendChild(historyCardEl);
+    };
+  });
+}
