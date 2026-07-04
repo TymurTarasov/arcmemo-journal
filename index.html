@@ -105,38 +105,38 @@
       <div class="absolute bottom-[-10%] right-[20%] w-[400px] h-[400px] bg-[#22b8d6]/10 rounded-full blur-[100px]"></div>
     </div>
 
-    <div class="relative max-w-3xl mx-auto px-5 py-8">
-
-      <!-- Header -->
-      <div class="flex items-center justify-between mb-8 gap-4 flex-wrap">
-        <div class="flex items-center gap-3 shrink-0">
-          <img src="/logo.png" alt="MemoJournal" class="w-12 h-12 rounded-2xl">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="text-xl font-bold tracking-tight">MemoJournal</span>
-              <span class="text-xs px-1.5 py-0.5 bg-zinc-800/80 text-zinc-500 rounded-md border border-zinc-700/50 font-mono tracking-wider">DEMO</span>
-            </div>
-            <div class="text-xs t3 tracking-wider mt-0.5">Send USDC. Remember why.</div>
+    <!-- Header: full viewport width, NOT inside the centered content column -->
+    <div class="relative flex items-center justify-between gap-4 flex-wrap px-6 py-5">
+      <div class="flex items-center gap-3 shrink-0">
+        <img src="/logo.png" alt="MemoJournal" class="w-12 h-12 rounded-2xl">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xl font-bold tracking-tight">MemoJournal</span>
+            <span class="text-xs px-1.5 py-0.5 bg-zinc-800/80 text-zinc-500 rounded-md border border-zinc-700/50 font-mono tracking-wider">DEMO</span>
           </div>
-        </div>
-
-        <div class="flex items-center gap-2.5 shrink-0">
-          <!-- Theme toggle -->
-          <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl btn-s border">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="t3 shrink-0"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            <button id="themeToggle" class="theme-track" title="Toggle theme"></button>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="t3 shrink-0"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          </div>
-          <!-- Balance -->
-          <div id="balanceDisplay" class="hidden text-sm font-mono font-semibold text-accent bg-accent-soft border border-accent px-3 py-2 rounded-2xl whitespace-nowrap"></div>
-          <!-- Wallet + network -->
-          <div class="flex flex-col items-end leading-tight">
-            <div id="walletStatus"></div>
-            <div id="networkBadge" class="hidden text-xs text-zinc-500 font-mono">Arc Testnet</div>
-          </div>
-          <button id="connectBtn" class="px-4 py-2.5 bg-white text-black text-sm font-medium rounded-2xl hover:bg-zinc-100 transition whitespace-nowrap">Connect Wallet</button>
+          <div class="text-xs t3 tracking-wider mt-0.5">Send USDC. Remember why.</div>
         </div>
       </div>
+
+      <div class="flex items-center gap-2.5 shrink-0">
+        <!-- Theme toggle -->
+        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl btn-s border">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="t3 shrink-0"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <button id="themeToggle" class="theme-track" title="Toggle theme"></button>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="t3 shrink-0"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </div>
+        <!-- Balance -->
+        <div id="balanceDisplay" class="hidden text-sm font-mono font-semibold text-accent bg-accent-soft border border-accent px-3 py-2 rounded-2xl whitespace-nowrap"></div>
+        <!-- Wallet + network -->
+        <div class="flex flex-col items-end leading-tight">
+          <div id="walletStatus"></div>
+          <div id="networkBadge" class="hidden text-xs text-zinc-500 font-mono">Arc Testnet</div>
+        </div>
+        <button id="connectBtn" class="px-4 py-2.5 bg-white text-black text-sm font-medium rounded-2xl hover:bg-zinc-100 transition whitespace-nowrap">Connect Wallet</button>
+      </div>
+    </div>
+
+    <div class="relative max-w-3xl mx-auto px-5 pb-8">
 
       <!-- Page navigation -->
       <div class="flex flex-wrap gap-2 mb-6">
