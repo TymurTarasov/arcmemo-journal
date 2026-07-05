@@ -16,8 +16,17 @@ const ERC20_ABI = [
     outputs: [{ name: "", type: "uint256" }] },
 ];
 
-const DEFAULT_COLORS = { Payment:"#009dbd", Gift:"#22b8d6", Work:"#006c81", Other:"#6b7280" };
-const TYPE_ICONS = { note:"📝", event:"🎯", holiday:"🎉", custom:"✏️", payment:"💸" };
+const DEFAULT_COLORS = { Payment:"#009dbd", Gift:"#f59e0b", Work:"#3b82f6", Other:"#6b7280" };
+const TYPE_ICONS = {
+  note: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+  event: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2"/></svg>',
+  holiday: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  custom: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
+  payment: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+};
+const ICON_PERSON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+const ICON_CHEVRON_LEFT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+const ICON_CHEVRON_RIGHT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
 const TYPE_COLORS = { note:"#009dbd", event:"#22b8d6", holiday:"#8fdcee", custom:"#006c81", payment:"#6b7280" };
 
 const $ = id => document.getElementById(id);
@@ -625,7 +634,7 @@ function renderSchedCalendar(){
     if(hasTx)dots.push('<span class="w-1.5 h-1.5 rounded-full dot-accent inline-block"></span>');
     if(hasSched)dots.push('<span class="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span>');
     if(hasEv)hasEv.slice(0,3).forEach(e=>dots.push('<span class="w-1.5 h-1.5 rounded-full inline-block" style="background:'+e.color+'"></span>'));
-    const evNames=hasEv?hasEv.slice(0,1).map(e=>'<div class="text-xs leading-tight truncate px-0.5" style="color:'+e.color+'">'+(TYPE_ICONS[e.type]||"")+" "+e.title+'</div>').join(""):"";
+    const evNames=hasEv?hasEv.slice(0,1).map(e=>'<div class="text-xs leading-tight truncate px-0.5 inline-flex items-center gap-1" style="color:'+e.color+'">'+(TYPE_ICONS[e.type]||TYPE_ICONS.note)+'<span class="truncate">'+e.title+'</span></div>').join(""):"";
     let cls="py-2 rounded-xl cursor-pointer flex flex-col items-center hover:bg-zinc-800/60 transition min-h-[56px] justify-start pt-1.5 ";
     if(isSelected)cls+="bg-accent-soft outline outline-2 outline-[var(--accent)] text-accent font-semibold ";
     else if(isToday)cls+="ring-1 ring-[var(--accent)]/70 bg-accent-soft text-accent font-semibold ";
@@ -648,18 +657,18 @@ window.showSchedDayDetail=(day,year,month)=>{
   let html="";
   events.forEach(e=>{
     html+='<div class="flex items-center justify-between p-2 rounded-xl text-xs" style="background:'+e.color+'18;border:1px solid '+e.color+'30">'+
-    '<span>'+(TYPE_ICONS[e.type]||"📝")+' '+e.title+'</span>'+
+    '<span class="inline-flex items-center gap-1.5">'+(TYPE_ICONS[e.type]||TYPE_ICONS.note)+' '+e.title+'</span>'+
     '<div class="flex gap-1.5 ml-2 shrink-0">'+
     '<button onclick="editSchedEvent('+e.id+',\''+e.title.replace(/'/g,"\\'")+'\',\''+e.type+'\')" class="text-zinc-500 hover:text-accent transition">✎</button>'+
     '<button onclick="deleteSchedEvent('+e.id+')" class="text-zinc-500 hover:text-red-400 transition">✕</button>'+
     '</div></div>';
   });
-  scheds.forEach(p=>{html+='<div class="p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-700 dark:text-amber-300">💸 '+(getContactName(p.recipient)||p.recipient.slice(0,8)+"...")+" · "+p.amount+' USDC</div>';});
+  scheds.forEach(p=>{html+='<div class="p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-700 dark:text-amber-300 inline-flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>'+(getContactName(p.recipient)||p.recipient.slice(0,8)+"...")+" · "+p.amount+' USDC</div>';});
   txs.forEach(tx=>{
     html+='<div class="p-2 rounded-xl text-xs" style="background:var(--card);border:1px solid var(--border)">'+
     '<div class="flex justify-between items-start"><span class="text-zinc-300 font-medium">'+(getContactName(tx.recipient)||tx.recipient.slice(0,8)+"...")+'</span>'+
     '<span class="text-accent font-semibold ml-2 shrink-0">'+tx.amount+' USDC</span></div>'+
-    (tx.memo?'<div class="text-zinc-500 text-xs mt-0.5">💬 '+tx.memo+'</div>':'')+
+    (tx.memo?'<div class="text-zinc-500 text-xs mt-0.5 inline-flex items-center gap-1"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'+tx.memo+'</div>':'')+
     '</div>';
   });
   if(!html)html='<p class="text-zinc-600 text-xs text-center py-2">Nothing here yet</p>';
