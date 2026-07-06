@@ -51,13 +51,27 @@ $("themeToggle").onclick = () => { isDark = !isDark; localStorage.setItem("mj_th
 // ─── TOAST ───────────────────────────────────────────────────────────
 function showToast(msg, type = "success") {
   const old = $("toast"); if (old) old.remove();
-  const colors = { success:"bg-emerald-500 text-black", error:"bg-red-500 text-white", info:"bg-zinc-800 text-zinc-200 border border-zinc-700" };
+  const cfg = {
+    success: { border:"#22c55e", iconBg:"rgba(34,197,94,0.15)", icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' },
+    error:   { border:"#ef4444", iconBg:"rgba(239,68,68,0.15)", icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' },
+    info:    { border:"#009dbd", iconBg:"var(--accent-soft)", icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#009dbd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>' },
+  };
+  const c = cfg[type] || cfg.info;
   const t = document.createElement("div");
   t.id = "toast";
-  t.className = "fixed top-5 right-5 z-[100] px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-medium max-w-sm " + colors[type];
-  t.innerHTML = msg;
+  t.className = "fixed top-5 right-5 z-[100] max-w-sm toast-in";
+  t.innerHTML =
+    '<div class="card border rounded-2xl p-4 flex items-start gap-3 shadow-2xl" style="border-color:' + c.border + '55">' +
+    '<div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:' + c.iconBg + '">' + c.icon + '</div>' +
+    '<div class="text-sm font-medium leading-snug pt-1">' + msg + '</div>' +
+    '</div>';
   document.body.appendChild(t);
-  setTimeout(() => { t.style.transition="opacity 0.4s"; t.style.opacity="0"; setTimeout(()=>t.remove(),400); }, 5000);
+  setTimeout(() => { t.style.transition = "opacity 0.4s, transform 0.4s"; t.style.opacity = "0"; t.style.transform = "translateX(16px)"; setTimeout(() => t.remove(), 400); }, 5000);
+}
+function txLink(hash, label) {
+  return '<a href="https://testnet.arcscan.app/tx/' + hash + '" target="_blank" class="inline-flex items-center gap-1 mt-1.5 text-xs font-semibold text-accent hover:underline">' +
+    (label || 'View transaction') +
+    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>';
 }
 
 // ─── CONTACT PICK MODAL ──────────────────────────────────────────────
@@ -418,7 +432,7 @@ $("sendBtn").onclick = async () => {
     const hash = await wc.sendTransaction({ account, to: USDC_ADDRESS, data });
     await supabase.from("transactions").insert({ wallet: account.toLowerCase(), recipient: to, amount: parseFloat(amount), memo, category, txhash: hash });
     await Promise.all([loadHistory(), loadBalance()]);
-    showToast('✅ Sent ' + amount + ' USDC! <a href="https://testnet.arcscan.app/tx/'+hash+'" target="_blank" class="underline">tx ↗</a>', "success");
+    showToast('<div>Sent <b>' + amount + ' USDC</b></div>' + txLink(hash), "success");
     $("recipient").value = ""; $("memo").value = ""; $("amount").value = "1";
   } catch (err) { showToast("Error: " + err.message, "error"); }
   finally { $("sendBtn").textContent = "Send with Memo →"; $("sendBtn").disabled = false; }
@@ -547,6 +561,9 @@ function setDefaultDateTime() {
   $("schedDateTime").value = d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes());
 }
 $("toggleScheduleForm").onclick = () => { $("scheduleForm").classList.toggle("hidden"); if (!$("scheduleForm").classList.contains("hidden")) setDefaultDateTime(); };
+$("sendAllScheduledBtn").onclick = () => {
+  showToast("Batch send is ready in the UI, but needs the multisend contract deployed first — one moment while we set that up.", "info");
+};
 $("cancelScheduleBtn").onclick = () => $("scheduleForm").classList.add("hidden");
 $("saveScheduleBtn").onclick = async () => {
   if (!account) { showToast("Connect wallet first!", "error"); return; }
@@ -561,6 +578,28 @@ async function loadScheduled() {
   if(!account)return;
   const{data}=await supabase.from("scheduled_payments").select("*").eq("wallet",account.toLowerCase()).eq("status","pending").order("scheduled_at",{ascending:true});
   allScheduled=data||[]; renderScheduled(allScheduled); allScheduled.forEach(p=>scheduleNotification(p));
+  checkDueReminder();
+}
+let lastReminderTime = 0;
+function checkDueReminder() {
+  const now = new Date();
+  const dueItems = allScheduled.filter(p => new Date(p.scheduled_at) <= now);
+  const sendAllBtn = $("sendAllScheduledBtn");
+  if (sendAllBtn) sendAllBtn.classList.toggle("hidden", dueItems.length < 2);
+  if (!dueItems.length) return;
+  if (Date.now() - lastReminderTime < 3600000) return;
+  lastReminderTime = Date.now();
+  const bellIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+  const t = document.createElement("div");
+  t.id = "bellReminder";
+  const old = document.getElementById("bellReminder"); if (old) old.remove();
+  t.className = "fixed top-5 right-5 z-[100] max-w-sm toast-in";
+  t.innerHTML = '<div class="card border rounded-2xl p-4 flex items-start gap-3 shadow-2xl" style="border-color:#f59e0b55">' +
+    '<div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(245,158,11,0.15)">' + bellIcon + '</div>' +
+    '<div class="text-sm font-medium leading-snug pt-1">You have <b>' + dueItems.length + '</b> scheduled payment' + (dueItems.length > 1 ? "s" : "") + ' waiting to be sent</div>' +
+    '</div>';
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.transition = "opacity 0.4s, transform 0.4s"; t.style.opacity = "0"; t.style.transform = "translateX(16px)"; setTimeout(() => t.remove(), 400); }, 4000);
 }
 function renderScheduled(items) {
   const el=$("scheduledList");
@@ -590,11 +629,11 @@ window.executeScheduled=async(id,recipient,amount,memo,category,repeatType)=>{
     if(repeatType==="once"){await supabase.from("scheduled_payments").update({status:"done"}).eq("id",id);}
     else{const next=new Date();if(repeatType==="daily")next.setDate(next.getDate()+1);if(repeatType==="weekly")next.setDate(next.getDate()+7);if(repeatType==="monthly")next.setMonth(next.getMonth()+1);await supabase.from("scheduled_payments").update({scheduled_at:next.toISOString()}).eq("id",id);}
     await Promise.all([loadHistory(),loadBalance(),loadScheduled()]);
-    showToast('✅ Sent '+amount+' USDC! <a href="https://testnet.arcscan.app/tx/'+hash+'" target="_blank" class="underline">tx ↗</a>',"success");
+    showToast('<div>Sent <b>'+amount+' USDC</b></div>'+txLink(hash),"success");
   }catch(err){showToast("Error: "+err.message,"error");}
 };
 window.deleteScheduled=async id=>{if(!confirm("Cancel?"))return;await supabase.from("scheduled_payments").update({status:"cancelled"}).eq("id",id);await loadScheduled();showToast("Cancelled","info");};
-function scheduleNotification(p){const ms=new Date(p.scheduled_at)-new Date();if(ms>0&&ms<3600000)setTimeout(()=>{showToast('⏰ Payment due: '+p.amount+' USDC',"info");loadScheduled();},ms);}
+function scheduleNotification(p){const ms=new Date(p.scheduled_at)-new Date();if(ms>0&&ms<3600000)setTimeout(()=>{showToast('Payment due: '+p.amount+' USDC',"info");loadScheduled();},ms);}
 setInterval(()=>{if(account)loadScheduled();},60000);
 
 // ─── CALENDAR EVENTS ─────────────────────────────────────────────────
@@ -804,7 +843,7 @@ $("swapBtn").onclick = async () => {
     const result = await resp.json();
     if (!resp.ok) throw new Error(result.error || "Swap failed");
 
-    showToast('✅ Swapped! Received ' + result.amountOut + ' ' + tokenOut + '. <a href="' + result.explorerUrl + '" target="_blank" class="underline">tx ↗</a>', "success");
+    showToast('<div>Swapped! Received <b>' + result.amountOut + ' ' + tokenOut + '</b></div>' + txLink(result.payoutTxHash), "success");
     await Promise.all([loadBalance(), updateSwapBalances(), loadSwapHistory()]);
     status.classList.add("hidden");
   } catch (err) {
@@ -862,6 +901,7 @@ window.toggleSwapHistoryExpand = () => { swapHistoryExpanded = !swapHistoryExpan
 const PAGES = ["send", "scheduled", "swap", "nft"];
 function initPageNav() {
   const historyCardEl = $("historyCard");
+  const schedCardEl = $("scheduledPaymentsCard");
   document.querySelectorAll(".page-tab").forEach(btn => {
     btn.onclick = () => {
       const page = btn.dataset.page;
@@ -869,8 +909,8 @@ function initPageNav() {
         $("page-" + p).classList.toggle("hidden", p !== page);
         document.querySelector('.page-tab[data-page="' + p + '"]').classList.toggle("page-tab-active", p === page);
       });
-      if (page === "send") $("sendHistorySlot").appendChild(historyCardEl);
-      if (page === "scheduled") $("schedHistorySlot").appendChild(historyCardEl);
+      if (page === "send") { $("sendHistorySlot").appendChild(historyCardEl); $("sendSchedSlot").appendChild(schedCardEl); }
+      if (page === "scheduled") { $("schedHistorySlot").appendChild(historyCardEl); $("schedPaymentsSlot").appendChild(schedCardEl); }
     };
   });
 }
