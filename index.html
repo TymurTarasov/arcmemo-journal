@@ -35,7 +35,15 @@
           repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--rule-line) 28px);
         color: var(--text); font-family: 'Inter',sans-serif; transition: background 0.3s, color 0.3s; min-height: 100vh;
       }
-      .card { background: var(--card); border-color: var(--border); backdrop-filter: blur(12px); }
+      .dark { --card-grid: rgba(0,157,189,0.10); }
+      .light { --card-grid: rgba(0,157,189,0.09); }
+      .card {
+        background-color: var(--card);
+        background-image:
+          repeating-linear-gradient(to bottom, transparent, transparent 23px, var(--card-grid) 24px),
+          repeating-linear-gradient(to right, transparent, transparent 23px, var(--card-grid) 24px);
+        border-color: var(--border); backdrop-filter: blur(12px);
+      }
       .inp { background: var(--input-bg); border-color: var(--input-border); color: var(--text); }
       .inp::placeholder { color: var(--text3); }
       .inp:focus { outline: none; border-color: #009dbd; }
@@ -82,6 +90,7 @@
       .btn-accent-tint { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-border); transition: all .15s; }
       .btn-accent-tint:hover { background: var(--accent); color: #fff; }
       .text-accent { color: var(--accent) !important; }
+      .hover-accent:hover { color: var(--accent) !important; }
       .bg-accent-soft { background: var(--accent-soft) !important; }
       .border-accent { border-color: var(--accent-border) !important; }
       .accent-bar { background: var(--accent) !important; }
@@ -119,6 +128,26 @@
         </div>
       </div>
 
+      <!-- Page navigation — same header row/level as logo and wallet -->
+      <div class="flex flex-wrap gap-2 justify-center">
+        <button class="page-tab page-tab-active" data-page="send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9 22 2Z"/></svg>
+          Send
+        </button>
+        <button class="page-tab" data-page="scheduled">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Schedule
+        </button>
+        <button class="page-tab" data-page="swap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          Swap
+        </button>
+        <button class="page-tab" data-page="nft">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13"/><path d="M3 8h18"/><path d="M12 8c-1.5-4-6-4-6-1s3 1 6 1"/><path d="M12 8c1.5-4 6-4 6-1s-3 1-6 1"/></svg>
+          NFT Gifts<span class="page-tab-soon">Soon</span>
+        </button>
+      </div>
+
       <div class="flex items-center gap-2.5 shrink-0">
         <!-- Theme toggle -->
         <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl btn-s border">
@@ -139,48 +168,27 @@
 
     <div class="relative max-w-3xl mx-auto px-5 pb-8">
 
-      <!-- Page navigation -->
-      <div class="flex flex-wrap gap-2 mb-6">
-        <button class="page-tab page-tab-active" data-page="send">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9 22 2Z"/></svg>
-          Send
-        </button>
-        <button class="page-tab" data-page="scheduled">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Schedule
-        </button>
-        <button class="page-tab" data-page="swap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-          Swap
-        </button>
-        <button class="page-tab" data-page="nft">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13"/><path d="M3 8h18"/><path d="M12 8c-1.5-4-6-4-6-1s3 1 6 1"/><path d="M12 8c1.5-4 6-4 6-1s-3 1-6 1"/></svg>
-          NFT Gifts<span class="page-tab-soon">Soon</span>
-        </button>
-      </div>
-
       <!-- ══════════════════════ PAGE: SEND ══════════════════════ -->
       <div id="page-send">
 
         <!-- Send Card (single) -->
         <div class="card border rounded-3xl p-6 mb-5">
-          <div class="flex items-center justify-between mb-5">
+          <div class="flex items-center justify-between mb-5 gap-3 flex-wrap">
             <div class="flex items-center gap-2">
               <div class="w-1.5 h-5 accent-bar rounded-full"></div>
               <h2 class="text-base font-semibold">Send USDC</h2>
-              <h2 class="text-base font-semibold">Send USDC</h2>
             </div>
-            <button id="switchToMultiBtn" class="text-sm px-4 py-2 btn-accent-tint rounded-xl transition inline-flex items-center gap-2 font-medium">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-              Multi-send
-            </button>
+            <div class="flex items-center gap-2">
+              <button id="chooseContactBtn" class="text-sm px-4 py-2 btn-s border rounded-xl transition whitespace-nowrap shrink-0">From contacts</button>
+              <button id="switchToMultiBtn" class="text-sm px-4 py-2 btn-accent-tint rounded-xl transition inline-flex items-center gap-2 font-medium whitespace-nowrap shrink-0">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                Multi-send
+              </button>
+            </div>
           </div>
           <div class="space-y-3">
             <div>
-              <div class="flex justify-between items-center mb-1.5">
-                <label class="text-xs t3 font-medium uppercase tracking-wider">Recipient</label>
-                <button id="chooseContactBtn" class="text-sm px-4 py-1.5 btn-s border rounded-xl transition whitespace-nowrap shrink-0">From contacts</button>
-              </div>
+              <label class="text-xs t3 font-medium uppercase tracking-wider block mb-1.5">Recipient</label>
               <input id="recipient" type="text" placeholder="0x..." class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -188,9 +196,15 @@
                 <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Amount (USDC)</label>
                 <input id="amount" type="number" value="1" step="0.01" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
               </div>
-              <div>
+              <div class="relative">
                 <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Category</label>
-                <select id="category" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm font-medium"></select>
+                <button type="button" id="categoryDisplay" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm font-medium flex items-center gap-2 text-left">
+                  <span id="categoryDisplayDot" class="w-2.5 h-2.5 rounded-full shrink-0"></span>
+                  <span id="categoryDisplayLabel" class="flex-1 truncate"></span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="t3 shrink-0"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <input type="hidden" id="category">
+                <div id="categoryDropdown" class="hidden absolute mt-1 z-20 card border rounded-2xl p-1.5 space-y-0.5 min-w-[160px]"></div>
               </div>
             </div>
             <div id="savedCategoriesBar" class="hidden">
@@ -216,7 +230,6 @@
             <div class="flex items-center gap-2">
               <div class="w-1.5 h-5 accent-bar rounded-full"></div>
               <h2 class="text-base font-semibold">Multi-Send USDC</h2>
-              <h2 class="text-base font-semibold">Multi-Send USDC</h2>
               <span class="text-xs px-2 py-0.5 bg-accent-soft text-accent border-accent border rounded-lg">NEW</span>
             </div>
             <button id="switchToSingleBtn" class="text-xs px-3 py-1.5 btn-s border rounded-xl transition">← Single send</button>
@@ -238,9 +251,15 @@
               <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Amount each (USDC)</label>
               <input id="multiAmount" type="number" value="1" step="0.01" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm">
             </div>
-            <div>
+            <div class="relative">
               <label class="block text-xs t3 font-medium uppercase tracking-wider mb-1.5">Category</label>
-              <select id="multiCategory" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm font-medium"></select>
+              <button type="button" id="multiCategoryDisplay" class="inp w-full border rounded-2xl px-4 py-2.5 text-sm font-medium flex items-center gap-2 text-left">
+                <span id="multiCategoryDisplayDot" class="w-2.5 h-2.5 rounded-full shrink-0"></span>
+                <span id="multiCategoryDisplayLabel" class="flex-1 truncate"></span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="t3 shrink-0"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <input type="hidden" id="multiCategory">
+              <div id="multiCategoryDropdown" class="hidden absolute mt-1 z-20 card border rounded-2xl p-1.5 space-y-0.5 min-w-[160px]"></div>
             </div>
           </div>
           <div class="mb-3">
@@ -289,7 +308,6 @@
               <div class="flex items-center gap-2">
                 <div class="w-1.5 h-5 accent-bar rounded-full"></div>
                 <h2 class="text-base font-semibold">History</h2>
-              <h2 class="text-base font-semibold">History</h2>
               </div>
               <div class="flex gap-2">
                 <input id="searchInput" type="text" placeholder="Search..." class="inp border rounded-xl px-3 py-1.5 text-xs w-32">
@@ -316,11 +334,11 @@
           <div class="flex gap-3 mb-3 text-xs t3 flex-wrap">
             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block dot-accent"></span>Transaction</span>
             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>Scheduled</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:var(--accent)"></span>Note</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:var(--accent-2)"></span>Event</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#8fdcee"></span>Holiday</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:var(--accent-3)"></span>Custom</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block bg-gray-400"></span>Transfer</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#009dbd"></span>Note</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#f97316"></span>Event</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#ec4899"></span>Holiday</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#8b5cf6"></span>Custom</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#22c55e"></span>Transfer</span>
           </div>
           <div id="schedCalendarGrid" class="grid grid-cols-7 gap-1 text-center text-xs mb-4"></div>
           <div id="schedDayDetails" class="hidden border-t border-zinc-800 pt-4">
@@ -337,19 +355,19 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                   Note
                 </button>
-                <button type="button" class="type-tab" data-type="event" data-color="#22b8d6">
+                <button type="button" class="type-tab" data-type="event" data-color="#f97316">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2"/></svg>
                   Event
                 </button>
-                <button type="button" class="type-tab" data-type="holiday" data-color="#8fdcee">
+                <button type="button" class="type-tab" data-type="holiday" data-color="#ec4899">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                   Holiday
                 </button>
-                <button type="button" class="type-tab" data-type="custom" data-color="#006c81">
+                <button type="button" class="type-tab" data-type="custom" data-color="#8b5cf6">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
                   Custom
                 </button>
-                <button type="button" class="type-tab" data-type="payment" data-color="#6b7280">
+                <button type="button" class="type-tab" data-type="payment" data-color="#22c55e">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                   Transfer
                 </button>
@@ -432,7 +450,6 @@
           <div class="flex items-center gap-2 mb-5">
             <div class="w-1.5 h-5 accent-bar rounded-full"></div>
             <h2 class="text-base font-semibold">Swap Tokens</h2>
-              <h2 class="text-base font-semibold">Swap Tokens</h2>
             <span class="text-xs px-2 py-0.5 bg-accent-soft text-accent border-accent border rounded-lg">via Circle</span>
           </div>
 
@@ -508,11 +525,22 @@
 
       <!-- Footer -->
       <footer class="border-t bdr pt-5 mt-3">
-        <div class="flex flex-wrap items-center justify-center gap-5 text-xs t3">
-          <a href="https://faucet.circle.com/" target="_blank" class="hover:text-[var(--accent)] transition">💧 Faucet</a>
-          <a href="https://testnet.arcscan.app/" target="_blank" class="hover:text-[var(--accent)] transition">🔍 Explorer</a>
-          <a href="https://docs.arc.io/" target="_blank" class="hover:text-zinc-300 transition">📄 Arc Docs</a>
-          <a href="https://x.com/Memo_Journal" target="_blank" class="hover:text-zinc-300 transition font-bold">𝕏</a>
+        <div class="flex flex-wrap items-center justify-center gap-2.5 text-xs t3">
+          <a href="https://faucet.circle.com/" target="_blank" class="btn-s border rounded-xl px-3.5 py-2 inline-flex items-center gap-1.5 hover-accent transition">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69s-6 7.5-6 11a6 6 0 0 0 12 0c0-3.5-6-11-6-11Z"/></svg>
+            Faucet
+          </a>
+          <a href="https://testnet.arcscan.app/" target="_blank" class="btn-s border rounded-xl px-3.5 py-2 inline-flex items-center gap-1.5 hover-accent transition">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Explorer
+          </a>
+          <a href="https://docs.arc.io/" target="_blank" class="btn-s border rounded-xl px-3.5 py-2 inline-flex items-center gap-1.5 hover-accent transition">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Arc Docs
+          </a>
+          <a href="https://x.com/Memo_Journal" target="_blank" class="btn-s border rounded-xl px-3.5 py-2 inline-flex items-center gap-1.5 hover-accent transition font-bold" title="Follow on X">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
         </div>
         <div class="text-center text-xs t3 mt-3 opacity-50">MemoJournal · Built on Arc Testnet · 2025</div>
       </footer>

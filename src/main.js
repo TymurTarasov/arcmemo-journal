@@ -27,7 +27,7 @@ const TYPE_ICONS = {
 const ICON_PERSON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 const ICON_CHEVRON_LEFT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
 const ICON_CHEVRON_RIGHT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
-const TYPE_COLORS = { note:"#009dbd", event:"#22b8d6", holiday:"#8fdcee", custom:"#006c81", payment:"#6b7280" };
+const TYPE_COLORS = { note:"#009dbd", event:"#f97316", holiday:"#ec4899", custom:"#8b5cf6", payment:"#22c55e" };
 
 const $ = id => document.getElementById(id);
 
@@ -118,14 +118,44 @@ $("switchToSingleBtn").onclick = () => {
   document.querySelector(".card").classList.remove("hidden");
 };
 
-function syncMultiCategorySelect() {
-  const sel = $("multiCategory"), cur = sel.value;
-  sel.innerHTML = $("category").innerHTML;
-  if (cur) sel.value = cur;
-  sel.style.color = getCategoryColor(sel.value);
-  sel.style.fontWeight = "600";
+function buildCategoryOptions() {
+  return [
+    { name:"Payment", color:DEFAULT_COLORS.Payment },
+    { name:"Gift", color:DEFAULT_COLORS.Gift },
+    { name:"Work", color:DEFAULT_COLORS.Work },
+    { name:"Other", color:DEFAULT_COLORS.Other },
+    ...allCategories.map(c => ({ name:c.name, color:c.color||"#6b7280" }))
+  ];
 }
-$("multiCategory").addEventListener("change", () => { $("multiCategory").style.color = getCategoryColor($("multiCategory").value); });
+function renderCategoryDropdown(prefix, options) {
+  $(prefix + "Dropdown").innerHTML = options.map(o =>
+    '<div onclick="selectCategoryOption(\''+prefix+'\',\''+o.name.replace(/'/g,"\\'")+'\')" class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer row-hover text-sm">' +
+    '<span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:'+o.color+'"></span>' + o.name +
+    '</div>'
+  ).join("");
+}
+function setCategoryDisplay(prefix, name, color) {
+  $(prefix + "DisplayDot").style.background = color;
+  $(prefix + "DisplayLabel").textContent = name;
+}
+window.selectCategoryOption = (prefix, name) => {
+  const opt = buildCategoryOptions().find(o => o.name === name) || { name, color:"#6b7280" };
+  $(prefix).value = opt.name;
+  $(prefix).dispatchEvent(new Event("change"));
+  setCategoryDisplay(prefix, opt.name, opt.color);
+  $(prefix + "Dropdown").classList.add("hidden");
+};
+function syncMultiCategorySelect() {
+  const opts = buildCategoryOptions();
+  const cur = $("multiCategory").value || $("category").value || opts[0].name;
+  renderCategoryDropdown("multiCategory", opts);
+  const curOpt = opts.find(o => o.name === cur) || opts[0];
+  $("multiCategory").value = curOpt.name;
+  setCategoryDisplay("multiCategory", curOpt.name, curOpt.color);
+}
+$("categoryDisplay").onclick = (e) => { e.stopPropagation(); $("categoryDropdown").classList.toggle("hidden"); $("multiCategoryDropdown").classList.add("hidden"); };
+$("multiCategoryDisplay").onclick = (e) => { e.stopPropagation(); $("multiCategoryDropdown").classList.toggle("hidden"); $("categoryDropdown").classList.add("hidden"); };
+document.addEventListener("click", () => { $("categoryDropdown").classList.add("hidden"); $("multiCategoryDropdown").classList.add("hidden"); });
 
 function addRecipientRow(address = "", name = "") {
   const id = Date.now() + Math.random();
@@ -249,25 +279,14 @@ function getCategoryColor(name) {
   return c ? (c.color || "#6b7280") : "#6b7280";
 }
 function updateCategorySelect() {
-  const sel = $("category"), cur = sel.value;
-  sel.innerHTML = "";
-  const all = [
-    { name:"Payment", color:DEFAULT_COLORS.Payment },
-    { name:"Gift", color:DEFAULT_COLORS.Gift },
-    { name:"Work", color:DEFAULT_COLORS.Work },
-    { name:"Other", color:DEFAULT_COLORS.Other },
-    ...allCategories.map(c => ({ name:c.name, color:c.color||"#6b7280" }))
-  ];
-  all.forEach(({ name, color }) => {
-    const o = document.createElement("option");
-    o.value = name; o.textContent = name; o.style.color = color;
-    if (name === cur) o.selected = true;
-    sel.appendChild(o);
-  });
-  sel.style.color = getCategoryColor(sel.value); sel.style.fontWeight = "600";
+  const opts = buildCategoryOptions();
+  const cur = $("category").value || opts[0].name;
+  renderCategoryDropdown("category", opts);
+  const curOpt = opts.find(o => o.name === cur) || opts[0];
+  $("category").value = curOpt.name;
+  setCategoryDisplay("category", curOpt.name, curOpt.color);
   syncMultiCategorySelect();
 }
-$("category").addEventListener("change", () => { $("category").style.color = getCategoryColor($("category").value); });
 
 async function loadCategories() {
   if (!account) return;
@@ -289,7 +308,7 @@ function renderSavedCategories() {
     '</div>'
   ).join("");
 }
-window.selectCategory = name => { $("category").value = name; $("category").style.color = getCategoryColor(name); showToast("Category: " + name, "info"); };
+window.selectCategory = name => { window.selectCategoryOption("category", name); showToast("Category: " + name, "info"); };
 window.renameCategory = async (id, oldName) => {
   const n = prompt('Rename "' + oldName + '" to:', oldName);
   if (!n || n.trim() === oldName) return;
@@ -499,12 +518,23 @@ function renderContacts(contacts) {
     '<div class="font-mono text-xs t3">' + c.address.slice(0,6) + "..." + c.address.slice(-4) + '</div></div></div>' +
     '<div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">' +
     '<button onclick="useContact(\'' + c.address + '\',\'' + c.name + '\')" class="text-xs px-2 py-1 bg-accent-soft hover:bg-accent hover:text-white text-accent rounded-lg transition">Send</button>' +
+    '<button onclick="editContact(' + c.id + ',\'' + c.name.replace(/'/g,"\\'") + '\',\'' + c.address + '\')" class="text-xs px-2 py-1 t3 hover-accent rounded-lg transition">✎</button>' +
     '<button onclick="deleteContact(' + c.id + ')" class="text-xs px-2 py-1 t3 hover:text-red-400 rounded-lg transition">✕</button>' +
     '</div></div>'
   ).join("");
 }
 window.useContact = (address, name) => { $("recipient").value = address; showToast("Selected: " + name, "info"); window.scrollTo({ top:0, behavior:"smooth" }); };
 window.deleteContact = async id => { await supabase.from("contacts").delete().eq("id", id); await loadContacts(); showToast("Deleted", "info"); };
+window.editContact = async (id, oldName, oldAddress) => {
+  const newName = prompt("Contact name:", oldName);
+  if (newName === null) return;
+  const newAddress = prompt("Contact address:", oldAddress);
+  if (newAddress === null) return;
+  if (!newName.trim() || !newAddress.trim()) { showToast("Name and address can't be empty", "error"); return; }
+  const { error } = await supabase.from("contacts").update({ name: newName.trim(), address: newAddress.trim() }).eq("id", id);
+  if (error) { showToast("Error: " + error.message, "error"); return; }
+  await loadContacts(); showToast("Contact updated ✓", "success");
+};
 $("chooseContactBtn").onclick = () => {
   if (!account) { showToast("Connect wallet first!", "error"); return; }
   if (!allContacts.length) { showToast("No contacts yet", "info"); return; }
