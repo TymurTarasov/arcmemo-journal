@@ -1,5 +1,5 @@
 import { supabase } from "./supabase.js";
-import { createWalletClient, createPublicClient, custom, http, parseUnits, encodeFunctionData, formatUnits, maxUint256 } from "viem";
+import { createWalletClient, createPublicClient, custom, http, parseUnits, encodeFunctionData, formatUnits } from "viem";
 
 const ARC_TESTNET = {
   id: 5042002, name: "Arc Testnet",
@@ -26,6 +26,7 @@ const ERC20_EXT_ABI = [
 
 // ─── BATCH SEND (multisend contract — one signature for many recipients) ──
 const MULTISEND_ADDRESS = "0x1ae3CCcC01D9124e8455ff973CB45da452b44654";
+const MAX_UINT256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935n;
 const MULTISEND_ABI = [
   { name: "multisend", type: "function", stateMutability: "nonpayable",
     inputs: [
@@ -42,7 +43,7 @@ async function batchSend(recipients, amounts, onStatus) {
   const allowance = await pc.readContract({ address: USDC_ADDRESS, abi: ERC20_EXT_ABI, functionName: "allowance", args: [account, MULTISEND_ADDRESS] });
   if (allowance < total) {
     onStatus("Approving USDC for batch sending (one-time)...");
-    const approveData = encodeFunctionData({ abi: ERC20_EXT_ABI, functionName: "approve", args: [MULTISEND_ADDRESS, maxUint256] });
+    const approveData = encodeFunctionData({ abi: ERC20_EXT_ABI, functionName: "approve", args: [MULTISEND_ADDRESS, MAX_UINT256] });
     const approveHash = await wc.sendTransaction({ account, to: USDC_ADDRESS, data: approveData });
     await pc.waitForTransactionReceipt({ hash: approveHash });
   }
