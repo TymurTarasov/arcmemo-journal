@@ -1,5 +1,5 @@
 import { supabase } from "./supabase.js";
-import { createWalletClient, createPublicClient, custom, http, parseUnits, encodeFunctionData, formatUnits } from "viem";
+import { createWalletClient, createPublicClient, custom, http, parseUnits, encodeFunctionData, formatUnits, maxUint256 } from "viem";
 
 const ARC_TESTNET = {
   id: 5042002, name: "Arc Testnet",
@@ -15,6 +15,44 @@ const ERC20_ABI = [
     inputs: [{ name: "account", type: "address" }],
     outputs: [{ name: "", type: "uint256" }] },
 ];
+const ERC20_EXT_ABI = [
+  { name: "allowance", type: "function", stateMutability: "view",
+    inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }] },
+  { name: "approve", type: "function", stateMutability: "nonpayable",
+    inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }],
+    outputs: [{ name: "", type: "bool" }] },
+];
+
+// ─── BATCH SEND (multisend contract — one signature for many recipients) ──
+const MULTISEND_ADDRESS = "0x1ae3CCcC01D9124e8455ff973CB45da452b44654";
+const MULTISEND_ABI = [
+  { name: "multisend", type: "function", stateMutability: "nonpayable",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "recipients", type: "address[]" },
+      { name: "amounts", type: "uint256[]" },
+    ], outputs: [] },
+];
+async function batchSend(recipients, amounts, onStatus) {
+  const pc = createPublicClient({ chain: ARC_TESTNET, transport: http("https://rpc.testnet.arc.network") });
+  const wc = createWalletClient({ chain: ARC_TESTNET, transport: custom(window.ethereum) });
+  const total = amounts.reduce((a, b) => a + b, 0n);
+
+  const allowance = await pc.readContract({ address: USDC_ADDRESS, abi: ERC20_EXT_ABI, functionName: "allowance", args: [account, MULTISEND_ADDRESS] });
+  if (allowance < total) {
+    onStatus("Approving USDC for batch sending (one-time)...");
+    const approveData = encodeFunctionData({ abi: ERC20_EXT_ABI, functionName: "approve", args: [MULTISEND_ADDRESS, maxUint256] });
+    const approveHash = await wc.sendTransaction({ account, to: USDC_ADDRESS, data: approveData });
+    await pc.waitForTransactionReceipt({ hash: approveHash });
+  }
+
+  onStatus("Sending " + recipients.length + " payments in one transaction...");
+  const data = encodeFunctionData({ abi: MULTISEND_ABI, functionName: "multisend", args: [USDC_ADDRESS, recipients, amounts] });
+  const hash = await wc.sendTransaction({ account, to: MULTISEND_ADDRESS, data });
+  await pc.waitForTransactionReceipt({ hash });
+  return hash;
+}
 
 const DEFAULT_COLORS = { Payment:"#009dbd", Gift:"#f59e0b", Work:"#3b82f6", Other:"#6b7280" };
 const TYPE_ICONS = {
@@ -252,38 +290,27 @@ $("multiSendBtn").onclick = async () => {
 
   $("multiSendBtnLabel").textContent = "Sending..."; $("multiSendBtn").disabled = true;
   $("multiProgress").classList.remove("hidden");
-  $("multiProgress").innerHTML = recipients.map(r =>
-    '<div id="prog-' + r.id + '" class="flex items-center gap-2 text-xs px-3 py-2 rounded-xl border bdr">' +
-    '<span class="w-4 h-4 rounded-full border-2 border-zinc-600 shrink-0 flex items-center justify-center" id="icon-' + r.id + '">⏳</span>' +
-    '<span class="flex-1 truncate">' + (r.name || r.address.slice(0,10)+"...") + '</span>' +
-    '<span class="text-zinc-400">' + amount + ' USDC</span>' +
-    '</div>'
-  ).join("");
+  $("multiProgress").innerHTML = '<div class="text-xs t3 text-center py-2" id="batchStatus">Preparing batch...</div>';
 
-  const wc = createWalletClient({ chain: ARC_TESTNET, transport: custom(window.ethereum) });
-  let successCount = 0, failCount = 0;
-
-  for (const r of recipients) {
-    const iconEl = $("icon-" + r.id);
-    const rowEl = $("prog-" + r.id);
-    try {
-      const data = encodeFunctionData({ abi: ERC20_ABI, functionName: "transfer", args: [r.address, parseUnits(amount, 6)] });
-      const hash = await wc.sendTransaction({ account, to: USDC_ADDRESS, data });
-      await supabase.from("transactions").insert({ wallet: account.toLowerCase(), recipient: r.address, amount: parseFloat(amount), memo, category, txhash: hash });
-      if (iconEl) iconEl.textContent = "✅";
-      if (rowEl) rowEl.style.borderColor = "#10b981";
-      successCount++;
-    } catch (err) {
-      if (iconEl) iconEl.textContent = "❌";
-      if (rowEl) rowEl.style.borderColor = "#ef4444";
-      failCount++;
-      console.error("Failed for", r.address, err);
-    }
+  try {
+    const amountWei = parseUnits(amount, 6);
+    const hash = await batchSend(
+      recipients.map(r => r.address),
+      recipients.map(() => amountWei),
+      (status) => { const el = $("batchStatus"); if (el) el.textContent = status; }
+    );
+    await Promise.all(recipients.map(r =>
+      supabase.from("transactions").insert({ wallet: account.toLowerCase(), recipient: r.address, amount: parseFloat(amount), memo, category, txhash: hash })
+    ));
+    await Promise.all([loadHistory(), loadBalance()]);
+    showToast('<div>Sent to <b>' + recipients.length + ' recipients</b> in a single transaction</div>' + txLink(hash), "success");
+    $("multiProgress").classList.add("hidden");
+  } catch (err) {
+    showToast("Batch send error: " + err.message, "error");
+    $("multiProgress").classList.add("hidden");
+  } finally {
+    $("multiSendBtnLabel").textContent = "Send to All →"; $("multiSendBtn").disabled = false;
   }
-
-  await Promise.all([loadHistory(), loadBalance()]);
-  $("multiSendBtnLabel").textContent = "Send to All →"; $("multiSendBtn").disabled = false;
-  showToast("✅ Done! " + successCount + " sent" + (failCount ? ", " + failCount + " failed" : ""), successCount > 0 ? "success" : "error");
 };
 
 // ─── CATEGORIES ──────────────────────────────────────────────────────
@@ -561,8 +588,39 @@ function setDefaultDateTime() {
   $("schedDateTime").value = d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes());
 }
 $("toggleScheduleForm").onclick = () => { $("scheduleForm").classList.toggle("hidden"); if (!$("scheduleForm").classList.contains("hidden")) setDefaultDateTime(); };
-$("sendAllScheduledBtn").onclick = () => {
-  showToast("Batch send is ready in the UI, but needs the multisend contract deployed first — one moment while we set that up.", "info");
+$("sendAllScheduledBtn").onclick = async () => {
+  if (!account) { showToast("Connect wallet first!", "error"); return; }
+  const dueItems = allScheduled.filter(p => new Date(p.scheduled_at) <= new Date());
+  if (dueItems.length < 2) { showToast("Not enough due payments to batch", "info"); return; }
+
+  const btn = $("sendAllScheduledBtn");
+  btn.disabled = true; const originalLabel = btn.textContent; btn.textContent = "Sending...";
+  try {
+    const amounts = dueItems.map(p => parseUnits(String(p.amount), 6));
+    const hash = await batchSend(
+      dueItems.map(p => p.recipient),
+      amounts,
+      (status) => { btn.textContent = status; }
+    );
+    for (const p of dueItems) {
+      await supabase.from("transactions").insert({ wallet: account.toLowerCase(), recipient: p.recipient, amount: parseFloat(p.amount), memo: p.memo, category: p.category, txhash: hash });
+      if (p.repeat_type === "once") {
+        await supabase.from("scheduled_payments").update({ status: "done" }).eq("id", p.id);
+      } else {
+        const next = new Date();
+        if (p.repeat_type === "daily") next.setDate(next.getDate() + 1);
+        if (p.repeat_type === "weekly") next.setDate(next.getDate() + 7);
+        if (p.repeat_type === "monthly") next.setMonth(next.getMonth() + 1);
+        await supabase.from("scheduled_payments").update({ scheduled_at: next.toISOString() }).eq("id", p.id);
+      }
+    }
+    await Promise.all([loadHistory(), loadBalance(), loadScheduled()]);
+    showToast('<div>Sent <b>' + dueItems.length + ' scheduled payments</b> in a single transaction</div>' + txLink(hash), "success");
+  } catch (err) {
+    showToast("Batch send error: " + err.message, "error");
+  } finally {
+    btn.disabled = false; btn.textContent = originalLabel;
+  }
 };
 $("cancelScheduleBtn").onclick = () => $("scheduleForm").classList.add("hidden");
 $("saveScheduleBtn").onclick = async () => {
