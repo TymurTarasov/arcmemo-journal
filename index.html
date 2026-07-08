@@ -102,15 +102,13 @@
       .type-tab svg { width: 15px; height: 15px; stroke-width: 1.8; }
       .type-tab:hover { border-color: var(--accent-border); color: var(--text); }
       .type-tab-active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+      .type-tab-disabled { opacity: .45; cursor: not-allowed; }
+      .type-tab-disabled:hover { border-color: var(--border); color: var(--text3); }
+      .type-tab-soon-label { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; opacity: .8; }
 
       /* ── PAGE NAV ──────────────────────────────────────────────── */
-      .logo-word {
-        font-family: 'Caveat', cursive; font-weight: 700; font-size: 30px; line-height: 1;
-        color: #ffffff; display: inline-block;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14'%3E%3Cpath d='M2 8 Q 30 2, 60 7 T 120 6 T 198 8' stroke='%23009dbd' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-        background-repeat: no-repeat; background-position: bottom left; background-size: 100% 10px; padding-bottom: 4px;
-      }
-      .logo-tagline { font-family: 'Baloo 2', cursive; font-weight: 600; font-size: 12px; color: #ffffff; opacity: .85; }
+      .logo-word { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 20px; color: #ffffff; letter-spacing: -0.01em; }
+      .logo-tagline { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 12px; color: #ffffff; opacity: .7; letter-spacing: 0.01em; }
       .page-tab { width: 100%; padding: 11px 14px; border-radius: 14px; font-size: 14px; font-weight: 500; transition: all .15s; background: var(--btn-bg); color: var(--btn-text); border: 1px solid var(--border); position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
       .page-tab svg { width: 16px; height: 16px; stroke-width: 1.8; flex-shrink: 0; }
       .page-tab:hover { background: var(--btn-hover); }
@@ -213,7 +211,7 @@
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="t3 shrink-0"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
                 <input type="hidden" id="category">
-                <div id="categoryDropdown" class="hidden absolute mt-1 z-20 card border rounded-2xl p-1.5 space-y-0.5 min-w-[160px]"></div>
+                <div id="categoryDropdown" class="hidden absolute mt-1 z-[60] card border rounded-2xl p-1.5 space-y-0.5 min-w-[160px]"></div>
               </div>
             </div>
             <div id="savedCategoriesBar" class="hidden">
@@ -268,7 +266,7 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="t3 shrink-0"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
               <input type="hidden" id="multiCategory">
-              <div id="multiCategoryDropdown" class="hidden absolute mt-1 z-20 card border rounded-2xl p-1.5 space-y-0.5 min-w-[160px]"></div>
+              <div id="multiCategoryDropdown" class="hidden absolute mt-1 z-[60] card border rounded-2xl p-1.5 space-y-0.5 min-w-[160px]"></div>
             </div>
           </div>
           <div class="mb-3">
@@ -424,22 +422,23 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                   Holiday
                 </button>
-                <button type="button" class="type-tab" data-type="custom" data-color="#8b5cf6">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
-                  Custom
-                </button>
                 <button type="button" class="type-tab" data-type="payment" data-color="#22c55e">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                   Transfer
                 </button>
+                <button type="button" class="type-tab type-tab-disabled" data-type="gift" data-color="#8b5cf6" disabled title="Coming soon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13"/><path d="M3 8h18"/><path d="M12 8c-1.5-4-6-4-6-1s3 1 6 1"/><path d="M12 8c1.5-4 6-4 6-1s-3 1-6 1"/></svg>
+                  <span>Gift<span class="type-tab-soon-label">Soon</span></span>
+                </button>
               </div>
               <input type="hidden" id="schedEventType" value="note">
+              <div>
+                <label class="text-xs t3 uppercase tracking-wider block mb-1">Reminder time</label>
+                <input id="schedEventTime" type="time" class="inp w-full border rounded-xl px-3 py-2 text-sm">
+              </div>
               <div class="flex gap-2">
                 <input id="schedEventColor" type="color" value="#009dbd" class="w-10 h-9 rounded-xl border border-zinc-700 bg-transparent cursor-pointer p-1">
                 <button id="schedSaveEventBtn" class="flex-1 px-4 py-2 btn-accent font-medium text-xs rounded-xl transition">Save</button>
-              </div>
-              <div id="schedCustomFields" class="hidden">
-                <input id="schedCustomLabel" type="text" placeholder="Custom event name..." class="inp w-full border rounded-xl px-3 py-2 text-xs">
               </div>
               <div id="schedPaymentFields" class="hidden space-y-2">
                 <div class="flex gap-2">

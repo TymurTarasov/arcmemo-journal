@@ -4,7 +4,7 @@ import { privateKeyToAccount } from "viem/accounts";
 
 const supabase = createClient(
   "https://doiwypvywdlchsscxsyt.supabase.co",
-  "sb_publishable_3uY_y0K1kr2F468sqmMmhg_MowMC6Y7"
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 const ARC_TESTNET = {

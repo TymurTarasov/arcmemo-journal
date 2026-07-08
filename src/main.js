@@ -1,4 +1,4 @@
-import { supabase } from "./supabase.js";
+import { supabase, setAuthToken } from "./supabase.js";
 import { createWalletClient, createPublicClient, custom, http, parseUnits, encodeFunctionData, formatUnits } from "viem";
 
 const ARC_TESTNET = {
@@ -60,13 +60,15 @@ const TYPE_ICONS = {
   note: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
   event: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2"/></svg>',
   holiday: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-  custom: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
+  gift: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13"/><path d="M3 8h18"/><path d="M12 8c-1.5-4-6-4-6-1s3 1 6 1"/><path d="M12 8c1.5-4 6-4 6-1s-3 1-6 1"/></svg>',
   payment: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
 };
 const ICON_PERSON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 const ICON_CHEVRON_LEFT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
 const ICON_CHEVRON_RIGHT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
-const TYPE_COLORS = { note:"#009dbd", event:"#f97316", holiday:"#ec4899", custom:"#8b5cf6", payment:"#22c55e" };
+const ICON_CLOCK_SM = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>';
+const ICON_CALENDAR_SM = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+const TYPE_COLORS = { note:"#009dbd", event:"#f97316", holiday:"#ec4899", gift:"#8b5cf6", payment:"#22c55e" };
 
 const $ = id => document.getElementById(id);
 
@@ -206,8 +208,25 @@ function syncMultiCategorySelect() {
   $("multiCategory").value = curOpt.name;
   setCategoryDisplay("multiCategory", curOpt.name, curOpt.color);
 }
-$("categoryDisplay").onclick = (e) => { e.stopPropagation(); $("categoryDropdown").classList.toggle("hidden"); $("multiCategoryDropdown").classList.add("hidden"); };
-$("multiCategoryDisplay").onclick = (e) => { e.stopPropagation(); $("multiCategoryDropdown").classList.toggle("hidden"); $("categoryDropdown").classList.add("hidden"); };
+function openDropdown(displayId, dropdownId) {
+  const btn = $(displayId), dd = $(dropdownId);
+  const wasHidden = dd.classList.contains("hidden");
+  closeAllDropdowns();
+  if (!wasHidden) return;
+  document.body.appendChild(dd);
+  const rect = btn.getBoundingClientRect();
+  dd.style.position = "fixed";
+  dd.style.top = (rect.bottom + 4) + "px";
+  dd.style.left = rect.left + "px";
+  dd.style.width = rect.width + "px";
+  dd.classList.remove("hidden");
+}
+function closeAllDropdowns() {
+  $("categoryDropdown").classList.add("hidden");
+  $("multiCategoryDropdown").classList.add("hidden");
+}
+$("categoryDisplay").onclick = (e) => { e.stopPropagation(); openDropdown("categoryDisplay", "categoryDropdown"); };
+$("multiCategoryDisplay").onclick = (e) => { e.stopPropagation(); openDropdown("multiCategoryDisplay", "multiCategoryDropdown"); };
 document.addEventListener("click", () => { $("categoryDropdown").classList.add("hidden"); $("multiCategoryDropdown").classList.add("hidden"); });
 
 function addRecipientRow(address = "", name = "") {
@@ -384,18 +403,47 @@ window.addEventListener("load", async () => {
   try {
     const accounts = await window.ethereum.request({ method: "eth_accounts" });
     if (accounts.length > 0) {
-      account = accounts[0]; updateWalletUI(); await switchToArc();
+      account = accounts[0]; updateWalletUI(); await switchToArc(); await authenticateWallet();
       await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances(), loadSwapHistory()]);
     }
   } catch (e) { console.log("Auto-connect:", e); }
 });
+
+// ─── WALLET AUTHENTICATION (sign a message → server verifies → issues a JWT that Supabase RLS checks) ──
+async function authenticateWallet() {
+  const cacheKey = "mj_jwt_" + account.toLowerCase();
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) {
+    try {
+      const payload = JSON.parse(atob(cached.split(".")[1]));
+      if (payload.exp * 1000 > Date.now() + 60000) { setAuthToken(cached); return true; }
+    } catch (e) { /* fall through to re-sign */ }
+  }
+  try {
+    const message = "Sign in to MemoJournal\n\nWallet: " + account + "\nTimestamp: " + Date.now();
+    const signature = await window.ethereum.request({ method: "personal_sign", params: [message, account] });
+    const resp = await fetch("/api/auth", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet: account, message, signature }),
+    });
+    const result = await resp.json();
+    if (!resp.ok) throw new Error(result.error || "Auth failed");
+    sessionStorage.setItem(cacheKey, result.token);
+    setAuthToken(result.token);
+    return true;
+  } catch (err) {
+    console.error("Wallet auth failed:", err);
+    showToast("Couldn't verify wallet ownership — please try reconnecting", "error");
+    return false;
+  }
+}
 
 // ─── CONNECT / DISCONNECT ─────────────────────────────────────────────
 $("connectBtn").onclick = async () => {
   if (!window.ethereum) { showToast("Please install MetaMask", "error"); return; }
   try {
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-    account = accounts[0]; updateWalletUI(); await switchToArc();
+    account = accounts[0]; updateWalletUI(); await switchToArc(); await authenticateWallet();
     await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances(), loadSwapHistory()]);
   } catch (err) { showToast("Error: " + err.message, "error"); }
 };
@@ -410,6 +458,7 @@ function updateWalletUI() {
 }
 function disconnectWallet() {
   account = null; allHistory = []; allContacts = []; allCategories = []; allCalendarEvents = [];
+  setAuthToken(null);
   $("walletStatus").innerHTML = ""; $("balanceDisplay").textContent = ""; $("balanceDisplay").classList.add("hidden");
   $("networkBadge").classList.add("hidden"); $("savedCategoriesBar").classList.add("hidden");
   const btn = $("connectBtn");
@@ -418,7 +467,7 @@ function disconnectWallet() {
   btn.onclick = async () => {
     try {
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-      account = accounts[0]; updateWalletUI(); await switchToArc();
+      account = accounts[0]; updateWalletUI(); await switchToArc(); await authenticateWallet();
       await Promise.all([loadBalance(), loadHistory(), loadContacts(), loadCategories(), loadScheduled(), loadCalendarEvents(), updateSwapBalances(), loadSwapHistory()]);
     } catch (err) { showToast("Error: " + err.message, "error"); }
   };
@@ -667,15 +716,26 @@ function renderScheduled(items) {
   el.innerHTML=items.map(p=>{
     const dt=new Date(p.scheduled_at),isDue=dt<=new Date(),name=getContactName(p.recipient);
     return '<div class="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs '+(isDue?'border-amber-500/40 bg-amber-500/5':'bdr')+'">' +
-    '<div class="shrink-0" style="color:'+(isDue?'var(--accent)':'var(--text3)')+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></div>' +
+    '<div class="shrink-0" style="color:'+(isDue?'var(--accent)':'var(--text3)')+'">'+(p.origin==="calendar"?ICON_CALENDAR_SM:ICON_CLOCK_SM)+'</div>' +
     '<div class="flex-1 min-w-0 truncate"><span class="font-medium">'+(name||p.recipient.slice(0,8)+"...")+' </span>' +
     '<span class="t3">'+dt.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+dt.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})+'</span>' +
     (p.memo?'<span class="t3"> · '+p.memo+'</span>':'')+'</div>' +
     '<span class="text-amber-600 font-semibold shrink-0">'+p.amount+' USDC</span>' +
     '<span class="t3 shrink-0">'+labels[p.repeat_type]+'</span>' +
-    (isDue?'<button onclick="executeScheduled('+p.id+',\''+p.recipient+'\','+p.amount+',\''+(p.memo||"")+'\',\'Payment\',\''+p.repeat_type+'\')" class="text-xs px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/30 text-amber-700 dark:text-amber-300 rounded-lg transition shrink-0">Send</button>':'')+
-    '<button onclick="deleteScheduled('+p.id+')" class="t3 hover:text-red-400 text-xs shrink-0 transition ml-1">✕</button></div>';
+    (isDue?'<button data-exec-id="'+p.id+'" class="exec-scheduled-btn text-xs px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/30 text-amber-700 dark:text-amber-300 rounded-lg transition shrink-0">Send</button>':'')+
+    '<button data-del-id="'+p.id+'" class="del-scheduled-btn t3 hover:text-red-400 text-xs shrink-0 transition ml-1">✕</button></div>';
   }).join("");
+  el.querySelectorAll(".exec-scheduled-btn").forEach(btn => {
+    btn.onclick = () => executeScheduledById(parseInt(btn.dataset.execId));
+  });
+  el.querySelectorAll(".del-scheduled-btn").forEach(btn => {
+    btn.onclick = () => window.deleteScheduled(parseInt(btn.dataset.delId));
+  });
+}
+async function executeScheduledById(id) {
+  const p = allScheduled.find(x => x.id === id);
+  if (!p) { showToast("Payment not found — try refreshing", "error"); return; }
+  return executeScheduled(id, p.recipient, p.amount, p.memo || "", p.category || "Payment", p.repeat_type);
 }
 window.executeScheduled=async(id,recipient,amount,memo,category,repeatType)=>{
   if(!account){showToast("Connect wallet first!","error");return;}
@@ -700,15 +760,17 @@ async function loadCalendarEvents(){
   if(!account)return;
   const{data}=await supabase.from("calendar_events").select("*").eq("wallet",account.toLowerCase());
   allCalendarEvents=data||[]; renderSchedCalendar();
+  allCalendarEvents.forEach(e=>calendarEventNotification(e));
 }
 function getDateKey(y,m,d){const pad=n=>String(n).padStart(2,"0");return y+"-"+pad(m+1)+"-"+pad(d);}
 
 // ─── SCHEDULE PAGE CALENDAR (big, permanent — not a popup) ────────────
 $("schedPrevMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()-1);renderSchedCalendar();};
 $("schedNextMonth").onclick=()=>{currentCalDate.setMonth(currentCalDate.getMonth()+1);renderSchedCalendar();};
-$("schedEventType").addEventListener("change",()=>{const t=$("schedEventType").value;$("schedPaymentFields").classList.toggle("hidden",t!=="payment");$("schedCustomFields").classList.toggle("hidden",t!=="custom");$("schedEventColor").value=TYPE_COLORS[t]||"#009dbd";});
+$("schedEventType").addEventListener("change",()=>{const t=$("schedEventType").value;$("schedPaymentFields").classList.toggle("hidden",t!=="payment");$("schedEventColor").value=TYPE_COLORS[t]||"#009dbd";});
 document.querySelectorAll("#schedTypeTabs .type-tab").forEach(tab=>{
   tab.onclick=()=>{
+    if (tab.disabled) { showToast("Gift events are coming soon", "info"); return; }
     document.querySelectorAll("#schedTypeTabs .type-tab").forEach(t=>t.classList.remove("type-tab-active"));
     tab.classList.add("type-tab-active");
     $("schedEventType").value=tab.dataset.type;
@@ -720,25 +782,39 @@ $("schedSaveEventBtn").onclick=async()=>{
   if(!account){showToast("Connect wallet first!","error");return;}
   if(!selectedSchedDay){showToast("Select a day first","error");return;}
   const type=$("schedEventType").value,color=$("schedEventColor").value;
+  const time=$("schedEventTime").value || "09:00";
+  const pad=n=>String(n).padStart(2,"0");
+  const dateStr=selectedSchedDay.y+"-"+pad(selectedSchedDay.m+1)+"-"+pad(selectedSchedDay.d);
   if(type==="payment"){
     const r=$("schedPayRecipient").value.trim(),a=$("schedPayAmount").value,memo=$("schedEventTitle").value.trim()||"Scheduled transfer";
     if(!r||!a){showToast("Fill recipient and amount","error");return;}
-    const pad=n=>String(n).padStart(2,"0");
-    const dt=selectedSchedDay.y+"-"+pad(selectedSchedDay.m+1)+"-"+pad(selectedSchedDay.d)+"T09:00";
-    await supabase.from("scheduled_payments").insert({wallet:account.toLowerCase(),recipient:r,amount:parseFloat(a),memo,category:"Payment",scheduled_at:new Date(dt).toISOString(),repeat_type:"once",status:"pending"});
+    const dt=dateStr+"T"+time;
+    const when=new Date(dt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+    if(!confirm("Send "+a+" USDC to "+r.slice(0,10)+"... at "+when+"?")) return;
+    await supabase.from("scheduled_payments").insert({wallet:account.toLowerCase(),recipient:r,amount:parseFloat(a),memo,category:"Payment",scheduled_at:new Date(dt).toISOString(),repeat_type:"once",status:"pending",origin:"calendar"});
     await loadScheduled();showToast("Transfer scheduled ✓","success");
+  }else if(type==="gift"){
+    showToast("Gift events are coming soon","info"); return;
   }else{
-    const title=type==="custom"?$("schedCustomLabel").value.trim():$("schedEventTitle").value.trim();
+    const title=$("schedEventTitle").value.trim();
     if(!title){showToast("Enter a title","error");return;}
     const dateKey=getDateKey(selectedSchedDay.y,selectedSchedDay.m,selectedSchedDay.d);
-    await supabase.from("calendar_events").insert({wallet:account.toLowerCase(),date:dateKey,title,type,color});
+    await supabase.from("calendar_events").insert({wallet:account.toLowerCase(),date:dateKey,title,type,color,remind_at:time});
     await loadCalendarEvents();showToast("Saved ✓","success");
   }
-  $("schedEventTitle").value="";$("schedPayRecipient").value="";$("schedPayAmount").value="1";$("schedCustomLabel").value="";
+  $("schedEventTitle").value="";$("schedPayRecipient").value="";$("schedPayAmount").value="1";$("schedEventTime").value="";
   renderSchedCalendar();showSchedDayDetail(selectedSchedDay.d,selectedSchedDay.y,selectedSchedDay.m);
 };
 window.editSchedEvent=async(id,oldTitle,type)=>{const n=prompt("Edit "+(type||"event")+":",oldTitle);if(!n||n.trim()===oldTitle)return;await supabase.from("calendar_events").update({title:n.trim()}).eq("id",id);await loadCalendarEvents();renderSchedCalendar();if(selectedSchedDay)showSchedDayDetail(selectedSchedDay.d,selectedSchedDay.y,selectedSchedDay.m);showToast("Updated ✓","success");};
 window.deleteSchedEvent=async id=>{await supabase.from("calendar_events").delete().eq("id",id);await loadCalendarEvents();renderSchedCalendar();if(selectedSchedDay)showSchedDayDetail(selectedSchedDay.d,selectedSchedDay.y,selectedSchedDay.m);showToast("Deleted","info");};
+function calendarEventNotification(e){
+  if(!e.remind_at)return;
+  const [ey,em,ed]=e.date.split("-").map(Number);
+  const target=new Date(ey,em-1,ed,...e.remind_at.split(":").map(Number));
+  const ms=target-new Date();
+  if(ms>0&&ms<3600000)setTimeout(()=>{showToast('<div class="inline-flex items-center gap-1.5">'+(TYPE_ICONS[e.type]||TYPE_ICONS.note)+' <b>'+e.title+'</b> reminder</div>',"info");},ms);
+}
+
 
 function renderSchedCalendar(){
   const year=currentCalDate.getFullYear(),month=currentCalDate.getMonth();
