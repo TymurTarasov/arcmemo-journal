@@ -219,7 +219,10 @@ function openDropdown(displayId, dropdownId) {
   dd.style.top = (rect.bottom + 4) + "px";
   dd.style.left = rect.left + "px";
   dd.style.width = rect.width + "px";
+  dd.style.maxHeight = "240px";
+  dd.style.overflowY = "auto";
   dd.classList.remove("hidden");
+  window.addEventListener("scroll", closeAllDropdowns, { capture: true, once: true, passive: true });
 }
 function closeAllDropdowns() {
   $("categoryDropdown").classList.add("hidden");
@@ -820,10 +823,11 @@ function renderSchedCalendar(){
   const year=currentCalDate.getFullYear(),month=currentCalDate.getMonth();
   $("schedCalendarTitle").textContent=new Date(year,month).toLocaleString("en-US",{month:"long",year:"numeric"});
   const firstDay=new Date(year,month,1).getDay(),daysInMonth=new Date(year,month+1,0).getDate();
-  const txByDay={},schedByDay={},eventsByDay={};
+  const txByDay={},schedByDay={},eventsByDay={},swapByDay={};
   allHistory.forEach(tx=>{const d=new Date(tx.created_at);if(d.getFullYear()===year&&d.getMonth()===month){const k=d.getDate();txByDay[k]=(txByDay[k]||0)+1;}});
   allScheduled.forEach(p=>{const d=new Date(p.scheduled_at);if(d.getFullYear()===year&&d.getMonth()===month){const k=d.getDate();schedByDay[k]=(schedByDay[k]||0)+1;}});
   allCalendarEvents.forEach(e=>{const[ey,em,ed]=e.date.split("-").map(Number);if(ey===year&&em===month+1){eventsByDay[ed]=eventsByDay[ed]||[];eventsByDay[ed].push(e);}});
+  lastSwapHistoryFull.forEach(s=>{const d=new Date(s.created_at);if(d.getFullYear()===year&&d.getMonth()===month){const k=d.getDate();swapByDay[k]=(swapByDay[k]||0)+1;}});
   const dn=["Mo","Tu","We","Th","Fr","Sa","Su"];
   let html=dn.map(d=>'<div class="text-zinc-600 text-xs py-1.5 font-medium">'+d+'</div>').join("");
   const startOffset=(firstDay+6)%7;
@@ -833,16 +837,17 @@ function renderSchedCalendar(){
   for(let day=1;day<=daysInMonth;day++){
     const isToday=today.getFullYear()===year&&today.getMonth()===month&&today.getDate()===day;
     const isSelected=isSelMonth&&selectedSchedDay.d===day;
-    const hasTx=txByDay[day],hasSched=schedByDay[day],hasEv=eventsByDay[day];
+    const hasTx=txByDay[day],hasSched=schedByDay[day],hasEv=eventsByDay[day],hasSwap=swapByDay[day];
     const dots=[];
     if(hasTx)dots.push('<span class="w-1.5 h-1.5 rounded-full dot-accent inline-block"></span>');
     if(hasSched)dots.push('<span class="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span>');
+    if(hasSwap)dots.push('<span class="w-1.5 h-1.5 rounded-full inline-block" style="background:#00e08a"></span>');
     if(hasEv)hasEv.slice(0,3).forEach(e=>dots.push('<span class="w-1.5 h-1.5 rounded-full inline-block" style="background:'+e.color+'"></span>'));
     const evNames=hasEv?hasEv.slice(0,1).map(e=>'<div class="text-xs leading-tight truncate px-0.5 inline-flex items-center gap-1" style="color:'+e.color+'">'+(TYPE_ICONS[e.type]||TYPE_ICONS.note)+'<span class="truncate">'+e.title+'</span></div>').join(""):"";
     let cls="py-2 rounded-xl cursor-pointer flex flex-col items-center hover:bg-zinc-800/60 transition min-h-[56px] justify-start pt-1.5 ";
     if(isSelected)cls+="bg-accent-soft outline outline-2 outline-[var(--accent)] text-accent font-semibold ";
     else if(isToday)cls+="ring-1 ring-[var(--accent)]/70 bg-accent-soft text-accent font-semibold ";
-    else cls+=(hasTx||hasSched||hasEv?"text-white ":"text-zinc-500 ");
+    else cls+=(hasTx||hasSched||hasEv||hasSwap?"text-white ":"text-zinc-500 ");
     html+='<div onclick="showSchedDayDetail('+day+','+year+','+month+')" class="'+cls+'"><span class="text-xs">'+day+'</span>'+(dots.length?'<div class="flex gap-0.5 mt-0.5">'+dots.join("")+'</div>':'')+evNames+'</div>';
   }
   $("schedCalendarGrid").innerHTML=html;
