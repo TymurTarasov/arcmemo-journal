@@ -781,6 +781,7 @@ document.querySelectorAll("#schedTypeTabs .type-tab").forEach(tab=>{
   };
 });
 $("schedPickContactBtn").onclick=()=>{if(!allContacts.length){showToast("No contacts yet","info");return;}openContactPicker((address,name)=>{$("schedPayRecipient").value=address;showToast("Selected: "+name,"info");});};
+$("schedRecipientContactBtn").onclick=()=>{if(!allContacts.length){showToast("No contacts yet","info");return;}openContactPicker((address,name)=>{$("schedRecipient").value=address;showToast("Selected: "+name,"info");});};
 $("schedSaveEventBtn").onclick=async()=>{
   if(!account){showToast("Connect wallet first!","error");return;}
   if(!selectedSchedDay){showToast("Select a day first","error");return;}
